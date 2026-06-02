@@ -1,0 +1,208 @@
+@import url("https://fonts.googleapis.com/css2?family=Arimo:ital,wght@0,400..700;1,400..700&family=Bai+Jamjuree:ital,wght@0,200;0,300;0,400;0,500;0,600;0,700;1,200;1,300;1,400;1,500;1,600;1,700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Montserrat:ital,wght@0,100..900;1,100..900&family=Space+Grotesk:wght@300..700&display=swap");
+@import "tailwindcss";
+
+@theme {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* Sonographer Pal brand tokens */
+  --color-brand: var(--brand);
+  --color-brand-deep: var(--brand-deep);
+  --color-brand-soft: var(--brand-soft);
+  --color-brand-red: var(--brand-red);
+  --color-nav-active: var(--nav-active);
+  --color-cream: var(--cream);
+  --color-cream-deep: var(--cream-deep);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-heading: var(--ink-heading);
+  --color-surface-soft: var(--surface-soft);
+  --color-ice: var(--ice);
+  --color-border-light: var(--border-light);
+  --color-border-gray: var(--border-gray);
+  --color-footer-bar: var(--footer-bar);
+  --color-footer-muted: var(--footer-muted);
+  --color-footer-socket: var(--footer-socket);
+  --color-auth-bg: var(--auth-bg);
+
+  /* Legacy aliases used by auth pages */
+  --color-avatar-a: var(--avatar-a);
+  --color-text-secondary: var(--text-secondary);
+
+  --background-image-hero-cream: linear-gradient(158deg, #faf7eb 0%, #ffffff 100%);
+  --background-image-hero-glow: radial-gradient(
+    60% 60% at 15% 30%,
+    rgba(244, 166, 8, 0.18) 0%,
+    rgba(244, 166, 8, 0) 70%
+  );
+  --background-image-cta-amber: linear-gradient(
+    180deg,
+    #f5b41a 0%,
+    #e4a014 100%
+  );
+
+  --font-montserrat: "Montserrat", ui-sans-serif, system-ui, sans-serif;
+  --font-space-grotesk: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-bai-jamjuree: "Bai Jamjuree", ui-sans-serif, system-ui, sans-serif;
+  --font-arimo: "Arimo", ui-sans-serif, system-ui, sans-serif;
+  --font-libre-baskerville: "Libre Baskerville", ui-serif, Georgia, serif;
+  --font-sans: var(--font-montserrat);
+  --font-heading: var(--font-space-grotesk);
+}
+
+@layer base {
+  :root {
+    --font-montserrat: "Montserrat", ui-sans-serif, system-ui, sans-serif;
+    --font-space-grotesk: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+    --font-bai-jamjuree: "Bai Jamjuree", ui-sans-serif, system-ui, sans-serif;
+    --font-arimo: "Arimo", ui-sans-serif, system-ui, sans-serif;
+    --font-libre-baskerville: "Libre Baskerville", ui-serif, Georgia, serif;
+
+    /* Light theme calibrated against the Sonographer Pal mockup */
+    --background: #ffffff;
+    --foreground: #1f2937;
+
+    --card: #ffffff;
+    --card-foreground: #1f2937;
+
+    --popover: #ffffff;
+    --popover-foreground: #1f2937;
+
+    --primary: #f4a608;
+    --primary-foreground: #ffffff;
+
+    --secondary: #f5f6f8;
+    --secondary-foreground: #1f2937;
+
+    --muted: #f5f6f8;
+    --muted-foreground: #6b7280;
+
+    --accent: #fff6e0;
+    --accent-foreground: #8a5b00;
+
+    --destructive: #ef4444;
+    --destructive-foreground: #ffffff;
+
+    --success: #16a34a;
+    --success-foreground: #ffffff;
+
+    --border: #e5e7eb;
+    --input: #f8fafc;
+    --ring: #f4a608;
+    --radius: 0.75rem;
+
+    /* Brand */
+    --brand: #f4a608;
+    --brand-deep: #d68d00;
+    --brand-soft: #fff3c8;
+    --brand-red: #ef4444;
+    --nav-active: #996e00;
+    --cream: #fff6e0;
+    --cream-deep: #fcefc1;
+    --ink: #1f2937;
+    --ink-muted: #6b7280;
+    --ink-heading: #111827;
+    --surface-soft: #f7f8fa;
+    --ice: #ffffff;
+    --border-light: #f1f2f4;
+    --border-gray: #e5e7eb;
+    --footer-bar: #f8f8f8;
+    --footer-muted: #555555;
+    --footer-socket: #0a0d12;
+    --auth-bg: #f7f8fa;
+    --avatar-a: #2563eb;
+    --text-secondary: #6b7280;
+  }
+
+  .dark {
+    --background: #0f172a;
+    --foreground: #f8fafc;
+    --card: #111827;
+    --card-foreground: #f8fafc;
+    --popover: #111827;
+    --popover-foreground: #f8fafc;
+    --primary: #fbbf24;
+    --primary-foreground: #1f2937;
+    --secondary: #1f2937;
+    --secondary-foreground: #f8fafc;
+    --muted: #1f2937;
+    --muted-foreground: #94a3b8;
+    --accent: #422006;
+    --accent-foreground: #fde68a;
+    --destructive: #f87171;
+    --destructive-foreground: #1f2937;
+    --success: #4ade80;
+    --success-foreground: #052e16;
+    --border: #1f2937;
+    --input: #1f2937;
+    --ring: #fbbf24;
+
+    --brand: #fbbf24;
+    --brand-deep: #f59e0b;
+    --brand-soft: #422006;
+    --brand-red: #f87171;
+    --nav-active: #fbbf24;
+    --cream: #1f2937;
+    --cream-deep: #111827;
+    --ink: #f8fafc;
+    --ink-muted: #94a3b8;
+    --ink-heading: #f8fafc;
+    --surface-soft: #111827;
+    --ice: #1f2937;
+    --border-light: #1f2937;
+    --border-gray: #334155;
+    --footer-bar: #0b1220;
+    --footer-muted: #94a3b8;
+    --footer-socket: #050810;
+    --auth-bg: #0f172a;
+    --avatar-a: #60a5fa;
+    --text-secondary: #94a3b8;
+  }
+
+  * {
+    @apply border-border;
+  }
+  html {
+    color-scheme: light;
+  }
+  html.dark {
+    color-scheme: dark;
+  }
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    margin: 0;
+    overflow-x: hidden;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-space-grotesk);
+  }
+
+  p {
+    font-family: var(--font-montserrat);
+  }
+}
