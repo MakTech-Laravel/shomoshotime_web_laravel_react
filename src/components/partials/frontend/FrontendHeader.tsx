@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";
-import { ChevronDown, ChevronRight, Menu, X } from "lucide-react";
+import { ChevronDown, ChevronRight, Menu, User, X } from "lucide-react";
 
 import { useAuth } from "@/auth/useAuth";
 import { Button } from "@/components/ui/button";
@@ -378,10 +378,32 @@ function GetStartedCta({
 }
 
 /* -------------------------------------------------------------------------- */
-/*  Profile avatar + dropdown + Get Started CTA (desktop only)                */
+/*  Guest: Log In + Get Started (desktop)                                     */
 /* -------------------------------------------------------------------------- */
 
-function AuthMenu() {
+function GuestAuthMenu() {
+  return (
+    <div className="hidden items-center gap-3 sm:gap-4 lg:flex">
+      <Link
+        to="/login"
+        className="inline-flex items-center gap-2 rounded-sm outline-none transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-[#c5a028]/35"
+        aria-label="Log in"
+      >
+        <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-black text-white sm:size-11">
+          <User className="size-5 sm:size-[22px]" strokeWidth={2} aria-hidden />
+        </span>
+        <span className="font-montserrat text-sm font-normal text-black sm:text-base">Log In</span>
+      </Link>
+      <GetStartedCta />
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Signed in: profile avatar + dropdown + Get Started CTA (desktop)        */
+/* -------------------------------------------------------------------------- */
+
+function SignedInAuthMenu() {
   const { isAuthenticated, logout, user } = useAuth();
 
   const displayName =
@@ -435,6 +457,11 @@ function AuthMenu() {
   );
 }
 
+function AuthMenu() {
+  const { isAuthenticated } = useAuth();
+  return isAuthenticated ? <SignedInAuthMenu /> : <GuestAuthMenu />;
+}
+
 /* -------------------------------------------------------------------------- */
 /*  Mobile nav (hamburger drawer)                                             */
 /* -------------------------------------------------------------------------- */
@@ -474,8 +501,10 @@ export function FrontendHeader() {
           )}
         >
           <BrandLogo />
-          <div className="flex flex-1 items-center justify-end gap-4 overflow-visible lg:gap-5">
+          <div className="hidden flex-1 justify-center overflow-visible lg:flex">
             <DesktopNav />
+          </div>
+          <div className="flex shrink-0 items-center gap-3 overflow-visible sm:gap-4">
             <AuthMenu />
             <MobileNav />
           </div>

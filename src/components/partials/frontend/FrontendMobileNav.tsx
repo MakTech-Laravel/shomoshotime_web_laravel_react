@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { ChevronDown, X } from "lucide-react";
+import { ChevronDown, User, X } from "lucide-react";
 
 import { useAuth } from "@/auth/useAuth";
 import { buildSpecialtyDropdownLinks } from "@/data/specialtyResources";
@@ -123,18 +123,32 @@ export function FrontendMobileNav({ open, onClose }: FrontendMobileNavProps) {
       />
       <aside className="fixed inset-0 z-50 flex flex-col bg-[#cccccc] font-montserrat lg:hidden">
         <div className="flex items-center justify-between border-b border-[#b8b8b8] px-5 py-4">
-          <div className="flex items-center gap-3">
-            <span className="flex size-10 shrink-0 overflow-hidden rounded-full bg-[#e8f4fc]">
-              <HeaderAvatar
-                src={avatarSrc}
-                alt={displayName || "Account"}
-                className="h-full w-full"
-              />
-            </span>
-            {displayName ? (
-              <span className="text-[17px] font-bold text-[#333333]">{displayName}</span>
-            ) : null}
-          </div>
+          {isAuthenticated ? (
+            <div className="flex items-center gap-3">
+              <span className="flex size-10 shrink-0 overflow-hidden rounded-full bg-[#e8f4fc]">
+                <HeaderAvatar
+                  src={avatarSrc}
+                  alt={displayName || "Account"}
+                  className="h-full w-full"
+                />
+              </span>
+              {displayName ? (
+                <span className="text-[17px] font-bold text-[#333333]">{displayName}</span>
+              ) : null}
+            </div>
+          ) : (
+            <Link
+              to="/login"
+              onClick={onClose}
+              className="inline-flex items-center gap-2"
+              aria-label="Log in"
+            >
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-black text-white">
+                <User className="size-5" strokeWidth={2} aria-hidden />
+              </span>
+              <span className="text-[17px] font-bold text-[#333333]">Log In</span>
+            </Link>
+          )}
 
           <button
             type="button"
@@ -212,31 +226,41 @@ export function FrontendMobileNav({ open, onClose }: FrontendMobileNavProps) {
         </nav>
 
         <div className="border-t border-[#b8b8b8] p-5">
-          <div className="overflow-hidden rounded-md border border-[#e8e8e8] bg-white">
-            {USER_ACCOUNT_TABS.map(({ label, view }, index) => (
-              <Link
-                key={view}
-                to={userAccountHref(view)}
-                onClick={onClose}
-                className={cn(
-                  "block px-4 py-3 font-montserrat text-[15px] font-normal text-[#333333] hover:bg-[#fffbf0] hover:text-[#c5a028]",
-                  index < USER_ACCOUNT_TABS.length - 1 && "border-b border-[#f0f0f0]",
-                )}
+          {isAuthenticated ? (
+            <div className="overflow-hidden rounded-md border border-[#e8e8e8] bg-white">
+              {USER_ACCOUNT_TABS.map(({ label, view }, index) => (
+                <Link
+                  key={view}
+                  to={userAccountHref(view)}
+                  onClick={onClose}
+                  className={cn(
+                    "block px-4 py-3 font-montserrat text-[15px] font-normal text-[#333333] hover:bg-[#fffbf0] hover:text-[#c5a028]",
+                    index < USER_ACCOUNT_TABS.length - 1 && "border-b border-[#f0f0f0]",
+                  )}
+                >
+                  {label}
+                </Link>
+              ))}
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  void logout();
+                }}
+                className="w-full border-t border-[#f0f0f0] px-4 py-3 text-left font-montserrat text-[15px] font-normal text-[#333333] hover:bg-[#fffbf0] hover:text-[#c5a028]"
               >
-                {label}
-              </Link>
-            ))}
-            <button
-              type="button"
-              onClick={() => {
-                onClose();
-                if (isAuthenticated) void logout();
-              }}
-              className="w-full border-t border-[#f0f0f0] px-4 py-3 text-left font-montserrat text-[15px] font-normal text-[#333333] hover:bg-[#fffbf0] hover:text-[#c5a028]"
+                Log Out
+              </button>
+            </div>
+          ) : (
+            <Link
+              to="/login"
+              onClick={onClose}
+              className="flex h-11 w-full items-center justify-center rounded-[5px] border border-[#e8e8e8] bg-white font-montserrat text-sm font-bold text-[#333333] hover:bg-[#fffbf0]"
             >
-              Log Out
-            </button>
-          </div>
+              Log In
+            </Link>
+          )}
           <Link
             to={PRICING_PLANS_PATH}
             onClick={onClose}
