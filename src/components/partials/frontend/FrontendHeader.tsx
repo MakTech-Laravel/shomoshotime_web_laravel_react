@@ -50,16 +50,18 @@ const NAV_ITEMS: NavItem[] = [
 ];
 
 /* -------------------------------------------------------------------------- */
-/*  Shared class tokens — body #333333 • accent #ffbf23 • Montserrat         */
+/*  Shared class tokens — nav #333333 • active #c5a028 • CTA #ffc107         */
 /* -------------------------------------------------------------------------- */
 
 const headerNavClass =
   "whitespace-nowrap font-montserrat text-[14px] font-regular leading-none tracking-[0.01em] text-[#333333] transition-colors duration-150 sm:text-base";
 
-const headerNavActiveClass = "text-[#ffbf23]";
+const headerNavActiveClass = "text-[#c5a028]";
+
+const headerNavHoverClass = "hover:text-[#c5a028]";
 
 const headerCtaClass =
-  "inline-flex h-9 shrink-0 items-center justify-center rounded-[5px] border border-black bg-[#ffbf23] px-5 font-montserrat text-[13px] font-bold leading-none text-black shadow-none transition-colors hover:bg-[#e6ac1f] sm:h-10 sm:px-6 sm:text-sm";
+  "inline-flex h-9 shrink-0 items-center justify-center rounded-[5px] border border-black bg-[#ffc107] px-5 font-montserrat text-[13px] font-bold leading-none text-black shadow-none transition-colors hover:bg-[#e6ac00] sm:h-10 sm:px-6 sm:text-sm";
 
 /** All specialty dropdown items (leaf + nested) share blue hover/active. */
 const dropdownLinkClass =
@@ -78,7 +80,7 @@ const accountDropdownPanelClass =
   "min-w-[220px] border border-[#f0f0f0] bg-white p-0 py-2 font-montserrat shadow-[0_8px_24px_rgba(0,0,0,0.08)]";
 
 const accountDropdownItemClass =
-  "cursor-pointer rounded-none px-5 py-2.5 text-left text-[14px] font-normal leading-snug text-[#333333] focus:bg-[#fffbf0] focus:text-[#ffbf23] data-[highlighted]:bg-[#fffbf0] data-[highlighted]:text-[#ffbf23]";
+  "cursor-pointer rounded-none px-5 py-2.5 text-left text-[14px] font-normal leading-snug text-[#333333] focus:bg-[#fffbf0] focus:text-[#c5a028] data-[highlighted]:bg-[#fffbf0] data-[highlighted]:text-[#c5a028]";
 
 const accountDropdownSeparatorClass = "my-1 h-px bg-[#f0f0f0]";
 
@@ -111,14 +113,14 @@ function BrandLogo({ className }: { className?: string }) {
       aria-label="Sonographer Pal home"
     >
       {/* Wrapper height controls logo size; img uses h-full so layout wins over img defaults */}
-      <span className="inline-flex h-16 items-center sm:h-20 lg:h-24">
+      <span className="inline-flex h-14 items-center sm:h-16 lg:h-[72px]">
         <img
           src="/images/logo.png"
           alt="Sonographer Pal"
           width={600}
           height={374}
           decoding="async"
-          className="h-full w-auto max-w-[min(72vw,320px)] object-contain object-left select-none sm:max-w-[min(55vw,380px)] lg:max-w-[420px]"
+          className="h-full w-auto max-w-[min(68vw,280px)] object-contain object-left select-none sm:max-w-[min(50vw,320px)] lg:max-w-[360px]"
           draggable={false}
         />
       </span>
@@ -297,7 +299,7 @@ function DesktopNavDropdown({ item }: { item: NavItem & { children: NavDropdownL
         aria-label={`${item.label} menu`}
         className={cn(
           headerNavClass,
-          sectionActive ? headerNavActiveClass : "hover:text-[#ffbf23]",
+          sectionActive ? headerNavActiveClass : headerNavHoverClass,
           "inline-flex cursor-default select-none outline-none",
         )}
       >
@@ -331,7 +333,7 @@ function DesktopNavDropdown({ item }: { item: NavItem & { children: NavDropdownL
 
 function DesktopNav() {
   return (
-    <nav className="hidden items-center gap-6 lg:flex xl:gap-8">
+    <nav className="hidden items-center gap-5 lg:flex xl:gap-7">
       {NAV_ITEMS.map((item) =>
         item.children ? (
           <DesktopNavDropdown key={item.to} item={item} />
@@ -341,7 +343,7 @@ function DesktopNav() {
             to={item.to}
             end={item.to === "/"}
             className={({ isActive }) =>
-              cn(headerNavClass, isActive ? headerNavActiveClass : "hover:text-[#ffbf23]")
+              cn(headerNavClass, isActive ? headerNavActiveClass : headerNavHoverClass)
             }
           >
             {item.label}
@@ -378,16 +380,11 @@ function GetStartedCta({
 /*  Profile avatar + dropdown + Get Started CTA (desktop only)                */
 /* -------------------------------------------------------------------------- */
 
-/** Demo label until login API is wired — replace with auth user when available. */
-const GUEST_DISPLAY_NAME = "Test";
-
 function AuthMenu() {
   const { isAuthenticated, logout, user } = useAuth();
 
   const displayName =
-    user?.name?.trim() ||
-    user?.email?.split("@")[0]?.trim() ||
-    GUEST_DISPLAY_NAME;
+    user?.name?.trim() || user?.email?.split("@")[0]?.trim() || "";
 
   return (
     <div className="hidden items-center gap-3 lg:flex">
@@ -395,17 +392,18 @@ function AuthMenu() {
         <DropdownMenuTrigger asChild>
           <button
             type="button"
-            className="flex items-center gap-2 rounded-sm p-0.5 outline-none focus-visible:ring-2 focus-visible:ring-[#ffbf23]/40"
+            className="flex items-center gap-2 rounded-sm p-0.5 outline-none focus-visible:ring-2 focus-visible:ring-[#c5a028]/35"
             aria-label="Account menu"
           >
-            <span className="max-w-[8rem] truncate font-montserrat text-[14px] font-normal text-black sm:max-w-[10rem] sm:text-base">
-              {displayName}
-            </span>
-            <span className="flex size-11 shrink-0 overflow-hidden rounded-full border-2 border-[#ffbf23] bg-white sm:size-12">
+            {displayName ? (
+              <span className="max-w-[8rem] truncate font-montserrat text-[14px] font-normal text-black sm:max-w-[10rem] sm:text-base">
+                {displayName}
+              </span>
+            ) : null}
+            <span className="flex size-11 shrink-0 overflow-hidden rounded-full bg-[#e8f4fc] sm:size-12">
               <HeaderAvatar
-                alt={displayName}
+                alt={displayName || "Account"}
                 className="h-full w-full"
-                fallbackSrc="/images/about/jessica-demarco.png"
               />
             </span>
             <ChevronDown className="size-5 shrink-0 text-[#333333]" strokeWidth={2} aria-hidden />
@@ -464,21 +462,16 @@ function MobileNav() {
 
 export function FrontendHeader() {
   return (
-    <header className="sticky top-0 z-40 flex flex-col overflow-visible font-montserrat">
-      {/* Top accent bar */}
-      <div
-        className="h-2 w-full shrink-0 bg-black sm:h-2.5"
-        aria-hidden
-      />
-      <div className="border-b border-[#f0f0f0] bg-white shadow-[0_1px_0_rgba(0,0,0,0.04)]">
+    <header className="sticky top-0 z-40 overflow-visible bg-white font-montserrat">
+      <div className="border-b border-[#ebebeb] bg-white">
         <div
           className={cn(
             container,
-            "relative flex min-h-[88px] items-center justify-between gap-6 overflow-visible py-1.5 sm:min-h-[96px] lg:min-h-[108px]",
+            "relative flex min-h-[72px] items-center justify-between gap-4 overflow-visible py-2 sm:min-h-[80px] lg:min-h-[84px]",
           )}
         >
           <BrandLogo />
-          <div className="flex flex-1 items-center justify-end gap-6 overflow-visible lg:gap-8">
+          <div className="flex flex-1 items-center justify-end gap-4 overflow-visible lg:gap-5">
             <DesktopNav />
             <AuthMenu />
             <MobileNav />

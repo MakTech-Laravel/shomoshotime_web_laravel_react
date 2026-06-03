@@ -9,8 +9,6 @@ import { HeaderAvatar } from "@/components/ui/HeaderAvatar";
 import { USER_ACCOUNT_TABS, userAccountHref } from "@/lib/userAccountNav";
 import { cn } from "@/lib/utils";
 
-const GUEST_DISPLAY_NAME = "Test";
-
 type NavDropdownLink = {
   label: string;
   slug: string;
@@ -36,6 +34,8 @@ const MOBILE_NAV_ITEMS: MobileNavItem[] = [
   { label: "Vascular", to: "/vascular", children: buildSpecialtyDropdownLinks() },
   { label: "OB/GYN", to: "/ob-gyn", children: buildSpecialtyDropdownLinks() },
   { label: "Abdominal", to: "/abdominal", children: buildSpecialtyDropdownLinks() },
+  { label: "About Us", to: "/about" },
+  { label: "Test", to: "/test" },
   {
     label: "Study Materials",
     to: "/exploreresources",
@@ -93,9 +93,7 @@ export function FrontendMobileNav({ open, onClose }: FrontendMobileNavProps) {
   const location = useLocation();
   const { isAuthenticated, logout, user } = useAuth();
   const displayName =
-    user?.name?.trim() ||
-    user?.email?.split("@")[0]?.trim() ||
-    GUEST_DISPLAY_NAME;
+    user?.name?.trim() || user?.email?.split("@")[0]?.trim() || "";
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
@@ -124,14 +122,15 @@ export function FrontendMobileNav({ open, onClose }: FrontendMobileNavProps) {
       <aside className="fixed inset-0 z-50 flex flex-col bg-[#cccccc] font-montserrat lg:hidden">
         <div className="flex items-center justify-between border-b border-[#b8b8b8] px-5 py-4">
           <div className="flex items-center gap-3">
-            <span className="flex size-10 shrink-0 overflow-hidden rounded-full border-2 border-[#ffbf23] bg-white">
+            <span className="flex size-10 shrink-0 overflow-hidden rounded-full bg-[#e8f4fc]">
               <HeaderAvatar
-                alt={displayName}
+                alt={displayName || "Account"}
                 className="h-full w-full"
-                fallbackSrc="/images/about/jessica-demarco.png"
               />
             </span>
-            <span className="text-[17px] font-bold text-[#333333]">{displayName}</span>
+            {displayName ? (
+              <span className="text-[17px] font-bold text-[#333333]">{displayName}</span>
+            ) : null}
           </div>
 
           <button
@@ -217,7 +216,7 @@ export function FrontendMobileNav({ open, onClose }: FrontendMobileNavProps) {
                 to={userAccountHref(view)}
                 onClick={onClose}
                 className={cn(
-                  "block px-4 py-3 font-montserrat text-[15px] font-normal text-[#333333] hover:bg-[#fffbf0] hover:text-[#ffbf23]",
+                  "block px-4 py-3 font-montserrat text-[15px] font-normal text-[#333333] hover:bg-[#fffbf0] hover:text-[#c5a028]",
                   index < USER_ACCOUNT_TABS.length - 1 && "border-b border-[#f0f0f0]",
                 )}
               >
@@ -230,7 +229,7 @@ export function FrontendMobileNav({ open, onClose }: FrontendMobileNavProps) {
                 onClose();
                 if (isAuthenticated) void logout();
               }}
-              className="w-full border-t border-[#f0f0f0] px-4 py-3 text-left font-montserrat text-[15px] font-normal text-[#333333] hover:bg-[#fffbf0] hover:text-[#ffbf23]"
+              className="w-full border-t border-[#f0f0f0] px-4 py-3 text-left font-montserrat text-[15px] font-normal text-[#333333] hover:bg-[#fffbf0] hover:text-[#c5a028]"
             >
               Log Out
             </button>
@@ -238,7 +237,7 @@ export function FrontendMobileNav({ open, onClose }: FrontendMobileNavProps) {
           <Link
             to={PRICING_PLANS_PATH}
             onClick={onClose}
-            className="mt-3 flex h-11 w-full items-center justify-center rounded-[5px] border border-black bg-[#ffbf23] font-montserrat text-sm font-bold text-black"
+            className="mt-3 flex h-11 w-full items-center justify-center rounded-[5px] border border-black bg-[#ffc107] font-montserrat text-sm font-bold text-black"
           >
             Get Started
           </Link>
