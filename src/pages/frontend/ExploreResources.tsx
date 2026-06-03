@@ -81,6 +81,11 @@ const AUDIO_DEMO_TRACK = {
 
 const MEMBERSHIP_FEATURES = [
   {
+    title: "Mock Exams",
+    body:
+      "All subscriptions include full-length simulated exams for ARDMS SPI, ARDMS Abdomen, ARDMS OB/GYN, ARDMS RVT, ARRT(S), and CCI RVS. Built to mirror the actual board exam experience with matching difficulty levels and comprehensive coverage of the essential concepts you'll face on test day.",
+  },
+  {
     title: "Study Guides for Each Specialty",
     body:
       "Access study guides with images on-demand for Abdomen, OB/GYN, Vascular, and Ultrasound Physics. Built for sonography students and professionals preparing for SPI, ARDMS®, CCI®, and ARRT® certification exams.",
@@ -99,11 +104,6 @@ const MEMBERSHIP_FEATURES = [
     title: "Practice Questions",
     body:
       "Practice board-style questions for Abdomen, OB/GYN, Vascular, and Ultrasound Physics. Built for sonography students and professionals preparing for SPI, ARDMS®, CCI®, and ARRT® certification exams.",
-  },
-  {
-    title: "Mock Exams",
-    body:
-      "All subscriptions include full-length simulated exams for ARDMS SPI, ARDMS Abdomen, ARDMS OB/GYN, ARDMS RVT, ARRT(S), and CCI RVS. Built to mirror the actual board exam experience with matching difficulty levels and comprehensive coverage of the essential concepts you'll face on test day.",
   },
 ] as const;
 
