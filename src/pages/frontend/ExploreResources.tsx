@@ -100,6 +100,11 @@ const MEMBERSHIP_FEATURES = [
     body:
       "Practice board-style questions for Abdomen, OB/GYN, Vascular, and Ultrasound Physics. Built for sonography students and professionals preparing for SPI, ARDMS®, CCI®, and ARRT® certification exams.",
   },
+  {
+    title: "Mock Exams",
+    body:
+      "All subscriptions include full-length simulated exams for ARDMS SPI, ARDMS Abdomen, ARDMS OB/GYN, ARDMS RVT, ARRT(S), and CCI RVS. Built to mirror the actual board exam experience with matching difficulty levels and comprehensive coverage of the essential concepts you'll face on test day.",
+  },
 ] as const;
 
 function MembershipSection() {
@@ -120,7 +125,7 @@ function MembershipSection() {
           </p>
         </div>
 
-        <div className="mx-auto mt-12 grid max-w-6xl grid-cols-1 gap-6 sm:mt-14 sm:grid-cols-2 sm:gap-8 lg:mt-16 lg:gap-x-10 lg:gap-y-8">
+        <div className="mx-auto mt-12 grid max-w-6xl grid-cols-1 gap-6 sm:mt-14 sm:grid-cols-2 sm:gap-8 lg:mt-16  lg:gap-x-10 lg:gap-y-8">
           {MEMBERSHIP_FEATURES.map((item) => (
             <article
               key={item.title}
