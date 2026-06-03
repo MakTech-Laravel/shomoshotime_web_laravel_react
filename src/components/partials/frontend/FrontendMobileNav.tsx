@@ -5,6 +5,7 @@ import { ChevronDown, X } from "lucide-react";
 import { useAuth } from "@/auth/useAuth";
 import { buildSpecialtyDropdownLinks } from "@/data/specialtyResources";
 import { PRICING_PLANS_PATH } from "@/lib/paths";
+import { getUserAvatarSrc } from "@/lib/userAvatar";
 import { HeaderAvatar } from "@/components/ui/HeaderAvatar";
 import { USER_ACCOUNT_TABS, userAccountHref } from "@/lib/userAccountNav";
 import { cn } from "@/lib/utils";
@@ -94,6 +95,7 @@ export function FrontendMobileNav({ open, onClose }: FrontendMobileNavProps) {
   const { isAuthenticated, logout, user } = useAuth();
   const displayName =
     user?.name?.trim() || user?.email?.split("@")[0]?.trim() || "";
+  const avatarSrc = getUserAvatarSrc(user);
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
@@ -124,6 +126,7 @@ export function FrontendMobileNav({ open, onClose }: FrontendMobileNavProps) {
           <div className="flex items-center gap-3">
             <span className="flex size-10 shrink-0 overflow-hidden rounded-full bg-[#e8f4fc]">
               <HeaderAvatar
+                src={avatarSrc}
                 alt={displayName || "Account"}
                 className="h-full w-full"
               />

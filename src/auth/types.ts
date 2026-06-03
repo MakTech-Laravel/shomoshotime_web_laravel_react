@@ -2,6 +2,11 @@ export type AuthUser = {
   id: string | number
   name?: string
   email?: string
+  /** Profile image URL from API (absolute or `/storage/...`). */
+  avatar?: string | null
+  avatar_url?: string | null
+  profile_photo?: string | null
+  profile_photo_url?: string | null
   role?: string
   roles?: string[]
   /**

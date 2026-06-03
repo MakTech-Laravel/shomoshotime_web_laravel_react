@@ -8,6 +8,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { getUserAvatarSrc } from "@/lib/userAvatar";
 import { cn } from "@/lib/utils";
 
 const DEMO_DISPLAY_NAME = "Md Shariful Islam MakTech";
@@ -22,6 +23,7 @@ export function UserProfileBanner({ className }: UserProfileBannerProps) {
     user?.name?.trim() ||
     user?.email?.split("@")[0]?.trim() ||
     DEMO_DISPLAY_NAME;
+  const avatarSrc = getUserAvatarSrc(user);
 
   return (
     <section className={cn("relative pb-5", className)}>
@@ -70,9 +72,9 @@ export function UserProfileBanner({ className }: UserProfileBannerProps) {
       <div className="absolute bottom-20 left-15">
         <div className="size-[5.25rem] overflow-hidden rounded-full border-[3px] border-white bg-white">
           <HeaderAvatar
+            src={avatarSrc}
             alt={displayName}
             className="h-full w-full object-cover"
-            fallbackSrc="/images/about/jessica-demarco.png"
           />
         </div>
       </div>

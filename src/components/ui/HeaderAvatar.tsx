@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
 
+import { DEFAULT_HEADER_AVATAR } from "@/lib/userAvatar";
 import { cn } from "@/lib/utils";
-
-const DEFAULT_HEADER_AVATAR = "/images/avatar/default-header-avatar.png";
 
 type HeaderAvatarProps = {
   src?: string | null;
@@ -11,16 +10,21 @@ type HeaderAvatarProps = {
   fallbackSrc?: string;
 };
 
+function pickAvatarSrc(src: string | null | undefined, fallbackSrc: string) {
+  const trimmed = src?.trim();
+  return trimmed ? trimmed : fallbackSrc;
+}
+
 export function HeaderAvatar({
   src,
   alt,
   className,
   fallbackSrc = DEFAULT_HEADER_AVATAR,
 }: HeaderAvatarProps) {
-  const [avatarSrc, setAvatarSrc] = useState(src || fallbackSrc);
+  const [avatarSrc, setAvatarSrc] = useState(() => pickAvatarSrc(src, fallbackSrc));
 
   useEffect(() => {
-    setAvatarSrc(src || fallbackSrc);
+    setAvatarSrc(pickAvatarSrc(src, fallbackSrc));
   }, [src, fallbackSrc]);
 
   return (
