@@ -26,19 +26,13 @@ function isPdfHeader(bytes: Uint8Array) {
   );
 }
 
-function dataUrlToBytes(dataUrl: string): Uint8Array {
-  const comma = dataUrl.indexOf(",");
-  if (comma === -1) {
+async function dataUrlToBytes(dataUrl: string): Promise<Uint8Array> {
+  if (!dataUrl.includes(",")) {
     throw new Error("Invalid embedded PDF data.");
   }
 
-  const base64 = dataUrl.slice(comma + 1);
-  const binary = atob(base64);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i += 1) {
-    bytes[i] = binary.charCodeAt(i);
-  }
-  return bytes;
+  const res = await fetch(dataUrl);
+  return new Uint8Array(await res.arrayBuffer());
 }
 
 /** Accepts pdfAssetId (preferred) or legacy path containing the slug. */
@@ -73,8 +67,7 @@ export function loadPdfBytes(pathOrId: string): Promise<Uint8Array> {
     return Promise.reject(new Error(`Unknown study guide PDF: ${assetId}`));
   }
 
-  return Promise.resolve().then(() => {
-    const bytes = dataUrlToBytes(dataUrl);
+  return dataUrlToBytes(dataUrl).then((bytes) => {
     if (bytes.byteLength === 0) {
       throw new Error("PDF file is empty.");
     }
