@@ -13,7 +13,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { FrontendMobileNav } from "@/components/partials/frontend/FrontendMobileNav";
 import { HeaderAvatar } from "@/components/ui/HeaderAvatar";
-import { buildSpecialtyDropdownLinks } from "@/data/specialtyResources";
+import { useStudyGuideNav } from "@/features/studyGuides/StudyGuideNavContext";
+import {
+  buildSpecialtyDropdownLinks,
+  type SpecialtySlug,
+} from "@/data/specialtyResources";
 import { container } from "@/lib/container";
 import { PRICING_PLANS_PATH } from "@/lib/paths";
 import { USER_ACCOUNT_TABS, userAccountHref } from "@/lib/userAccountNav";
@@ -39,16 +43,21 @@ type NavItem =
 /*  Nav data                                                                  */
 /* -------------------------------------------------------------------------- */
 
-const NAV_ITEMS: NavItem[] = [
-  { label: "Home", to: "/" },
-  { label: "Explore Resources", to: "/exploreresources" },
-  { label: "SPI", to: "/spi", children: buildSpecialtyDropdownLinks("/audio/spi") },
-  { label: "Vascular", to: "/vascular", children: buildSpecialtyDropdownLinks() },
-  { label: "OB/GYN", to: "/ob-gyn", children: buildSpecialtyDropdownLinks() },
-  { label: "Abdominal", to: "/abdominal", children: buildSpecialtyDropdownLinks() },
-  { label: "About Us", to: "/about" },
-  { label: "Test", to: "/test" },
-];
+const NAV_ITEM_DEFS: {
+  label: string;
+  to: string;
+  specialty?: SpecialtySlug;
+  audioHref?: string;
+}[] = [
+    { label: "Home", to: "/" },
+    { label: "Explore Resources", to: "/exploreresources" },
+    { label: "SPI", to: "/spi", specialty: "spi", audioHref: "/audio/spi" },
+    { label: "Vascular", to: "/vascular", specialty: "vascular" },
+    { label: "OB/GYN", to: "/ob-gyn", specialty: "ob-gyn" },
+    { label: "Abdominal", to: "/abdominal", specialty: "abdominal" },
+    { label: "About Us", to: "/about" },
+    { label: "Test", to: "/test" },
+  ];
 
 /* -------------------------------------------------------------------------- */
 /*  Shared class tokens — nav #333333 • active #c5a028 • CTA #ffc107         */
@@ -332,10 +341,32 @@ function DesktopNavDropdown({ item }: { item: NavItem & { children: NavDropdownL
 /*  Desktop nav row                                                           */
 /* -------------------------------------------------------------------------- */
 
+function useNavItems(): NavItem[] {
+  const { getNavChildren, isReady } = useStudyGuideNav();
+
+  return NAV_ITEM_DEFS.map((item) => {
+    if (!item.specialty) {
+      return { label: item.label, to: item.to };
+    }
+
+    return {
+      label: item.label,
+      to: item.to,
+      children: buildSpecialtyDropdownLinks(
+        item.audioHref,
+        getNavChildren(item.specialty),
+        { studyGuidesReady: isReady },
+      ),
+    };
+  });
+}
+
 function DesktopNav() {
+  const navItems = useNavItems();
+
   return (
     <nav className="hidden items-center gap-5 lg:flex xl:gap-7">
-      {NAV_ITEMS.map((item) =>
+      {navItems.map((item) =>
         item.children ? (
           <DesktopNavDropdown key={item.to} item={item} />
         ) : (

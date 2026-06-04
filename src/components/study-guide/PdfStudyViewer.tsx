@@ -36,15 +36,15 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { PDF_DOCUMENT_OPTIONS, pdfjs } from "@/lib/configurePdfWorker";
-import { isAbortError, isPdfCached, loadPdfBytes } from "@/lib/loadPdfBytes";
+import { loadPdfBytes } from "@/lib/loadPdfBytes";
+import { isPdfDocumentCached, loadPdfDocument, type PdfLoadSources } from "@/lib/loadPdfDocument";
 import { searchPdfText } from "@/lib/pdfTextSearch";
 import { cn } from "@/lib/utils";
 
 import "./pdf-study-viewer.css";
 
 type PdfStudyViewerProps = {
-  pdfAssetId: string;
+  pdfSources: PdfLoadSources;
   fileName: string;
   className?: string;
 };
@@ -74,7 +74,7 @@ function getRenderDpr() {
   return Math.min(window.devicePixelRatio || 1, MAX_RENDER_DPR);
 }
 
-export function PdfStudyViewer({ pdfAssetId, fileName, className }: PdfStudyViewerProps) {
+export function PdfStudyViewer({ pdfSources, fileName, className }: PdfStudyViewerProps) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -140,8 +140,7 @@ export function PdfStudyViewer({ pdfAssetId, fileName, className }: PdfStudyView
   }, []);
 
   useEffect(() => {
-    let active = true;
-    let pdf: PDFDocumentProxy | null = null;
+    let cancelled = false;
 
     setLoadError(null);
     setPageNumber(1);
@@ -151,46 +150,49 @@ export function PdfStudyViewer({ pdfAssetId, fileName, className }: PdfStudyView
     setSearchMatches([]);
     setSearchQuery("");
 
-    if (!isPdfCached(pdfAssetId)) {
+    if (!isPdfDocumentCached(pdfSources)) {
       setIsLoadingPdf(true);
     }
 
-    loadPdfBytes(pdfAssetId)
-      .then(async (bytes) => {
-        if (!active) return;
+    loadPdfDocument(pdfSources)
+      .then((loaded) => {
+        if (cancelled) return;
 
-        const loadingTask = pdfjs.getDocument({
-          data: bytes.slice(),
-          ...PDF_DOCUMENT_OPTIONS,
-          disableAutoFetch: true,
-          disableStream: true,
-        });
-
-        pdf = await loadingTask.promise;
-        if (!active) {
-          void pdf.destroy();
-          return;
-        }
-
-        setPdfDoc(pdf);
+        setPdfDoc(loaded);
         setLoadError(null);
-        setNumPages(pdf.numPages);
+        setNumPages(loaded.numPages);
         setIsLoadingPdf(false);
       })
       .catch((error: unknown) => {
-        if (!active || isAbortError(error)) return;
+        if (cancelled) return;
         setIsLoadingPdf(false);
+
         const message =
           error instanceof Error ? error.message : "Unable to load this PDF. Please try again later.";
-        setLoadError(message);
+
+        if (/worker was destroyed/i.test(message)) {
+          setLoadError("PDF viewer was interrupted. Please refresh the page.");
+          return;
+        }
+
+        if (/failed to fetch|network error/i.test(message)) {
+          setLoadError(
+            "Could not reach the PDF server. Confirm Laravel is running on port 8000, then refresh this page.",
+          );
+          return;
+        }
+
+        setLoadError(
+          /404|not found/i.test(message)
+            ? "This study guide PDF is missing on the server. Please re-upload the file from the admin panel."
+            : message,
+        );
       });
 
     return () => {
-      active = false;
-      if (pdf) void pdf.destroy();
-      setPdfDoc(null);
+      cancelled = true;
     };
-  }, [pdfAssetId]);
+  }, [pdfSources.primary, pdfSources.fallback]);
 
   useEffect(() => {
     const node = viewportRef.current;
@@ -318,7 +320,7 @@ export function PdfStudyViewer({ pdfAssetId, fileName, className }: PdfStudyView
   const resetZoom = useCallback(() => setScale(1), []);
 
   const downloadPdf = useCallback(async () => {
-    const bytes = await loadPdfBytes(pdfAssetId);
+    const bytes = await loadPdfBytes(pdfSources.primary);
     const blob = new Blob([new Uint8Array(bytes)], { type: "application/pdf" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -326,15 +328,17 @@ export function PdfStudyViewer({ pdfAssetId, fileName, className }: PdfStudyView
     link.download = fileName;
     link.click();
     URL.revokeObjectURL(url);
-  }, [pdfAssetId, fileName]);
+  }, [pdfSources.primary, fileName]);
 
   const printPdf = useCallback(async () => {
-    const bytes = await loadPdfBytes(pdfAssetId);
-    const blob = new Blob([new Uint8Array(bytes)], { type: "application/pdf" });
-    const url = URL.createObjectURL(blob);
+    const bytes = await loadPdfBytes(pdfSources.primary);
+    const url = URL.createObjectURL(
+      new Blob([new Uint8Array(bytes)], { type: "application/pdf" }),
+    );
     const win = window.open(url, "_blank");
     win?.addEventListener("load", () => win.print(), { once: true });
-  }, [pdfAssetId]);
+    URL.revokeObjectURL(url);
+  }, [pdfSources.primary]);
 
   const clearPageAnnotations = useCallback(() => {
     setAnnotations((current) => ({

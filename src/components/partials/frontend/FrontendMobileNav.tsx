@@ -3,7 +3,11 @@ import { Link, useLocation } from "react-router-dom";
 import { ChevronDown, User, X } from "lucide-react";
 
 import { useAuth } from "@/auth/useAuth";
-import { buildSpecialtyDropdownLinks } from "@/data/specialtyResources";
+import { useStudyGuideNav } from "@/features/studyGuides/StudyGuideNavContext";
+import {
+  buildSpecialtyDropdownLinks,
+  type SpecialtySlug,
+} from "@/data/specialtyResources";
 import { PRICING_PLANS_PATH } from "@/lib/paths";
 import { getUserAvatarSrc } from "@/lib/userAvatar";
 import { HeaderAvatar } from "@/components/ui/HeaderAvatar";
@@ -28,25 +32,31 @@ const STUDY_MATERIALS_LINKS = [
   { label: "Vascular Sonography", to: "/vascular" },
 ] as const;
 
-const MOBILE_NAV_ITEMS: MobileNavItem[] = [
-  { label: "Home", to: "/" },
-  { label: "Explore Resources", to: "/exploreresources" },
-  { label: "SPI", to: "/spi", children: buildSpecialtyDropdownLinks("/audio/spi") },
-  { label: "Vascular", to: "/vascular", children: buildSpecialtyDropdownLinks() },
-  { label: "OB/GYN", to: "/ob-gyn", children: buildSpecialtyDropdownLinks() },
-  { label: "Abdominal", to: "/abdominal", children: buildSpecialtyDropdownLinks() },
-  { label: "About Us", to: "/about" },
-  { label: "Test", to: "/test" },
-  {
-    label: "Study Materials",
-    to: "/exploreresources",
-    children: STUDY_MATERIALS_LINKS.map((link) => ({
-      label: link.label,
-      slug: link.to.replace(/^\//, ""),
-      href: link.to,
-    })),
-  },
-];
+const MOBILE_NAV_ITEM_DEFS: {
+  label: string;
+  to: string;
+  specialty?: SpecialtySlug;
+  audioHref?: string;
+  children?: MobileNavItem["children"];
+}[] = [
+    { label: "Home", to: "/" },
+    { label: "Explore Resources", to: "/exploreresources" },
+    { label: "SPI", to: "/spi", specialty: "spi", audioHref: "/audio/spi" },
+    { label: "Vascular", to: "/vascular", specialty: "vascular" },
+    { label: "OB/GYN", to: "/ob-gyn", specialty: "ob-gyn" },
+    { label: "Abdominal", to: "/abdominal", specialty: "abdominal" },
+    { label: "About Us", to: "/about" },
+    { label: "Test", to: "/test" },
+    {
+      label: "Study Materials",
+      to: "/exploreresources",
+      children: STUDY_MATERIALS_LINKS.map((link) => ({
+        label: link.label,
+        slug: link.to.replace(/^\//, ""),
+        href: link.to,
+      })),
+    },
+  ];
 
 const mobileItemClass =
   "flex w-full items-center justify-between border-b border-[#b8b8b8] px-5 py-4 text-left font-montserrat text-[17px] font-bold leading-snug text-[#333333]";
@@ -63,6 +73,30 @@ function resourceLinkPath(basePath: string, child: NavDropdownLink, sub?: { slug
 
 function isNavSectionActive(pathname: string, basePath: string) {
   return pathname === basePath || pathname.startsWith(`${basePath}/`);
+}
+
+function useMobileNavItems(): MobileNavItem[] {
+  const { getNavChildren, isReady } = useStudyGuideNav();
+
+  return MOBILE_NAV_ITEM_DEFS.map((item) => {
+    if (item.children) {
+      return { label: item.label, to: item.to, children: item.children };
+    }
+
+    if (!item.specialty) {
+      return { label: item.label, to: item.to };
+    }
+
+    return {
+      label: item.label,
+      to: item.to,
+      children: buildSpecialtyDropdownLinks(
+        item.audioHref,
+        getNavChildren(item.specialty),
+        { studyGuidesReady: isReady },
+      ),
+    };
+  });
 }
 
 function flattenDropdownLinks(basePath: string, links: NavDropdownLink[]) {
@@ -92,6 +126,7 @@ type FrontendMobileNavProps = {
 
 export function FrontendMobileNav({ open, onClose }: FrontendMobileNavProps) {
   const location = useLocation();
+  const mobileNavItems = useMobileNavItems();
   const { isAuthenticated, logout, user } = useAuth();
   const displayName =
     user?.name?.trim() || user?.email?.split("@")[0]?.trim() || "";
@@ -161,7 +196,7 @@ export function FrontendMobileNav({ open, onClose }: FrontendMobileNavProps) {
         </div>
 
         <nav className="flex-1 overflow-y-auto">
-          {MOBILE_NAV_ITEMS.map((item) => {
+          {mobileNavItems.map((item) => {
             const sectionKey = item.to;
             const isActive =
               item.to === "/"

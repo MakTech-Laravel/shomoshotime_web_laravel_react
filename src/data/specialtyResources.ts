@@ -201,13 +201,36 @@ export type ResourceDropdownLink = {
   children?: { label: string; slug: string }[];
 };
 
+/** Inject API-driven study guide items into a specialty dropdown. */
+export function mergeStudyGuideNavChildren(
+  links: ResourceDropdownLink[],
+  studyGuideChildren: { label: string; slug: string }[],
+): ResourceDropdownLink[] {
+  if (!studyGuideChildren.length) return links;
+
+  return links.map((link) =>
+    link.slug === "study-guides" ? { ...link, children: studyGuideChildren } : link,
+  );
+}
+
 /** Same SPI-style dropdown for SPI, Vascular, OB/GYN, and Abdominal. */
-export function buildSpecialtyDropdownLinks(audioHref?: string): ResourceDropdownLink[] {
+export function buildSpecialtyDropdownLinks(
+  audioHref?: string,
+  studyGuideChildren?: { label: string; slug: string }[],
+  options?: { studyGuidesReady?: boolean },
+): ResourceDropdownLink[] {
+  const studyChildren =
+    studyGuideChildren && studyGuideChildren.length > 0
+      ? studyGuideChildren
+      : options?.studyGuidesReady
+        ? []
+        : [{ label: "Outlines", slug: "outlines" }];
+
   return [
     {
       label: "Study Guides",
       slug: "study-guides",
-      children: [{ label: "Outlines", slug: "outlines" }],
+      children: studyChildren,
     },
     { label: "Audio", slug: "audio", ...(audioHref ? { href: audioHref } : {}) },
     { label: "Flashcards", slug: "flashcards", children: FLASHCARD_NAV_CHILDREN },
