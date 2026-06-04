@@ -1,6 +1,8 @@
 import { Suspense, useEffect, type ComponentType, type LazyExoticComponent } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 
+import { StudyGuideNavProvider } from "@/features/studyGuides/StudyGuideNavContext";
+
 const pageFallback = (
   <div className="flex min-h-dvh items-center justify-center text-sm text-muted-foreground">
     Loading…
@@ -22,5 +24,9 @@ export function ScrollToTopLayout() {
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
   }, [pathname]);
 
-  return <Outlet />;
+  return (
+    <StudyGuideNavProvider>
+      <Outlet />
+    </StudyGuideNavProvider>
+  );
 }
