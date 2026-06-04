@@ -127,6 +127,31 @@ export function buildLoginBody(email: string, password: string) {
   }
 }
 
+export async function googleLoginUser(
+  payload: { access_token: string },
+  handlers: AuthHandlers,
+) {
+  try {
+    const res = await request.post<unknown>(endpoints.googleLogin, {
+      access_token: payload.access_token,
+      fcm_token: getFcmToken(),
+    })
+    const user = await hydrateSessionFromLoginBody(
+      res.data,
+      handlers,
+      'Unable to restore your session after Google sign-in.',
+      'Google login response is missing access token.',
+    )
+    if (isAdminAccount(user)) {
+      throw new Error('This sign-in page is for customer accounts only.')
+    }
+    return { user, needsEmailVerification: false }
+  } catch (error) {
+    handlers.resetAuthState()
+    throw error
+  }
+}
+
 export async function loginUser(payload: LoginPayload, handlers: AuthHandlers) {
   try {
     const res = await request.post<unknown>(

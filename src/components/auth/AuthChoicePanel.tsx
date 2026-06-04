@@ -1,7 +1,8 @@
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { X } from "lucide-react";
 
-import { FacebookIcon, GoogleIcon } from "@/components/auth/AuthSocialIcons";
+import { FacebookIcon } from "@/components/auth/AuthSocialIcons";
+import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
 import { env } from "@/config/env";
 import { cn } from "@/lib/utils";
 
@@ -12,9 +13,9 @@ type AuthChoicePanelProps = {
   className?: string;
 };
 
-function getSocialAuthUrl(provider: "google" | "facebook") {
+function getFacebookAuthUrl() {
   const origin = env.apiBaseUrl.replace(/\/api\/v\d+\/?$/, "");
-  return `${origin}/auth/${provider}/redirect`;
+  return `${origin}/auth/facebook/redirect`;
 }
 
 const copy = {
@@ -56,8 +57,8 @@ export function AuthChoicePanel({ mode, className }: AuthChoicePanelProps) {
   const query = searchParams.toString();
   const emailPath = query ? `${text.emailTo}?${query}` : text.emailTo;
 
-  function handleSocialLogin(provider: "google" | "facebook") {
-    window.location.href = getSocialAuthUrl(provider);
+  function handleFacebookLogin() {
+    window.location.href = getFacebookAuthUrl();
   }
 
   return (
@@ -89,15 +90,12 @@ export function AuthChoicePanel({ mode, className }: AuthChoicePanelProps) {
         </p>
 
         <div className="mt-10 flex flex-col gap-4">
-          <button type="button" className={socialBtnClass} onClick={() => handleSocialLogin("google")}>
-            <GoogleIcon className="absolute left-4 size-5" />
-            {text.google}
-          </button>
+          <GoogleSignInButton label={text.google} className={socialBtnClass} />
 
           <button
             type="button"
             className={facebookBtnClass}
-            onClick={() => handleSocialLogin("facebook")}
+            onClick={handleFacebookLogin}
           >
             <FacebookIcon className="absolute left-4 size-5 text-white" />
             {text.facebook}

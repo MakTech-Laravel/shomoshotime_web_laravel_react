@@ -125,6 +125,8 @@ export const env = {
   refreshTokenBodyKey: refreshTokenEnv.bodyKey,
   /** Google Maps JS API key (Places + map). Optional until admin location map is used. */
   googleMapsApiKey: optionalViteString('VITE_GOOGLE_MAPS_API_KEY'),
+  /** OAuth 2.0 Web client ID for Google Sign-In (Google Cloud Console). */
+  googleClientId: optionalViteString('VITE_GOOGLE_CLIENT_ID'),
   /** Set `VITE_REQUIRE_AUTH=false` to browse all routes without signing in. */
   requireAuth: requireAuthFromEnv(),
 }
