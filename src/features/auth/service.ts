@@ -2,21 +2,30 @@ import {
   extractBearerTokenFromLoginBody,
   extractRefreshTokenFromLoginBody,
   extractUserFromAuthPayload,
+  mapApiUserRecord,
+  unwrapLaravelData,
 } from '@/api/laravelResponse'
 import { request } from '@/api/request'
 import { type AuthContextValue } from '@/auth/context'
-import { rolePolicy } from '@/auth/rolePolicy'
-import { getUserRoles } from '@/auth/roles'
+import { getFcmToken } from '@/auth/deviceContext'
+import {
+  clearPasswordResetSession,
+  getPasswordResetEmail,
+  getPasswordResetToken,
+  setPasswordResetSession,
+} from '@/auth/passwordResetSession'
 import { setAccessToken, setRefreshToken, setStoredAuthUser } from '@/auth/token'
 import { type AuthUser } from '@/auth/types'
+import { resolveAuthEndpoints } from '@/config/authEndpoints'
+import { USER_HOME_PATH } from '@/features/auth/paths'
 import {
-  type AdminLoginPayload,
-  type AuthRole,
   type LoginPayload,
   type PasswordResetOtpPayload,
   type RegisterPayload,
   type VerifyOtpPayload,
 } from '@/features/auth/types'
+
+const endpoints = resolveAuthEndpoints()
 
 type AuthHandlers = Pick<
   AuthContextValue,
@@ -52,13 +61,16 @@ function logOtpFromResponse(data: unknown, context: string) {
   console.log(`[auth] ${context} OTP:`, otp)
 }
 
-function ensureRoleMatchesExpected(user: unknown, expectedRole: AuthRole) {
-  const roles = getUserRoles(extractUserFromAuthPayload(user))
-  if (!roles.includes(expectedRole)) {
-    throw new Error(
-      `This account is not registered as ${expectedRole}. Please choose the correct account type.`,
-    )
-  }
+function isEmailVerifiedFromLoginBody(body: unknown): boolean {
+  const data = unwrapLaravelData<Record<string, unknown>>(body)
+  if (!data) return false
+  const otp = data.otp
+  return otp === 'Verified' || otp === 'verified'
+}
+
+function isAdminAccount(user: AuthUser | null): boolean {
+  if (!user) return false
+  return user.is_admin === true || user.is_admin === 1
 }
 
 async function hydrateSessionFromLoginBody(
@@ -93,70 +105,74 @@ async function hydrateSessionFromLoginBody(
     handlers.setUser(loggedInUser)
   }
   const refreshedUser = await handlers.refreshSession()
-  // Prefer `/auth/profile` result so role stays correct; login JSON alone can be incomplete.
   return refreshedUser ?? loggedInUser
 }
 
-export async function loginUserWithRole(payload: LoginPayload, handlers: AuthHandlers) {
+export function buildRegisterBody(payload: RegisterPayload) {
+  const name = `${payload.first_name} ${payload.last_name}`.trim()
+  return {
+    name,
+    email: payload.email,
+    password: payload.password,
+    password_confirmation: payload.password_confirmation,
+    fcm_token: getFcmToken(),
+  }
+}
+
+export function buildLoginBody(email: string, password: string) {
+  return {
+    email,
+    password,
+    fcm_token: getFcmToken(),
+  }
+}
+
+export async function loginUser(payload: LoginPayload, handlers: AuthHandlers) {
   try {
-    const res = await request.post<unknown>('/auth/login', payload)
+    const res = await request.post<unknown>(
+      endpoints.login,
+      buildLoginBody(payload.email, payload.password),
+    )
     const user = await hydrateSessionFromLoginBody(
       res.data,
       handlers,
       'Unable to restore your session after login.',
       'Login response is missing access token.',
     )
-    ensureRoleMatchesExpected(user, payload.role)
-    return user
+    if (isAdminAccount(user)) {
+      throw new Error('This sign-in page is for customer accounts only.')
+    }
+    return { user, needsEmailVerification: !isEmailVerifiedFromLoginBody(res.data) }
   } catch (error) {
     handlers.resetAuthState()
     throw error
   }
 }
 
-export async function loginAdmin(payload: AdminLoginPayload, handlers: AuthHandlers) {
-  const paths = ["/admin/login", "/auth/admin/login"];
-  let last: unknown = null;
-  for (const path of paths) {
-    try {
-      const res = await request.post<unknown>(path, payload);
-      return await hydrateSessionFromLoginBody(
-        res.data,
-        handlers,
-        "Unable to restore your admin session.",
-        "Admin login response is missing access token.",
-      );
-    } catch (e) {
-      last = e;
-    }
-  }
-  handlers.resetAuthState();
-  throw last;
-}
-
 export async function registerUser(payload: RegisterPayload) {
-  const res = await request.post<unknown>('/auth/register', payload)
+  const res = await request.post<unknown>(endpoints.register, buildRegisterBody(payload))
   logOtpFromResponse(res.data, 'register')
 }
 
 export async function registerAndLoginUser(payload: RegisterPayload) {
-  const res = await request.post<unknown>('/auth/register', payload)
+  const res = await request.post<unknown>(endpoints.register, buildRegisterBody(payload))
   logOtpFromResponse(res.data, 'register')
 
-  // Write the token directly to storage (NOT React state via handlers.setToken).
-  // Updating React state here would make isAuthenticated=true on /register,
-  // causing GuestGate to redirect before navigate() to /otp-verification fires.
-  // AuthProvider picks up the stored token when the OTP page mounts or on reload,
-  // and skips the /me call (which 404s for unverified users).
   const token = extractBearerTokenFromLoginBody(res.data)
-  const responseUser = extractUserFromAuthPayload(res.data)
-  const storedUser =
+  const data = unwrapLaravelData<Record<string, unknown>>(res.data)
+  const responseUser = data ? mapApiUserRecord(data) : null
+  const userId =
+    typeof data?.user_id === 'string' || typeof data?.user_id === 'number'
+      ? data.user_id
+      : payload.email
+  const storedUser: AuthUser =
     responseUser ??
     ({
-      id: payload.email,
+      id: userId,
       email: payload.email,
-      role: payload.role,
-      roles: [payload.role],
+      name: `${payload.first_name} ${payload.last_name}`.trim(),
+      role: 'user',
+      roles: ['user'],
     } satisfies AuthUser)
 
   if (token) {
@@ -170,30 +186,81 @@ export async function registerAndLoginUser(payload: RegisterPayload) {
 }
 
 export async function requestPasswordResetOtp(payload: PasswordResetOtpPayload) {
-  const res = await request.post<unknown>('/auth/forgot-password', payload)
+  const res = await request.post<unknown>(endpoints.forgotPassword, { email: payload.email })
   logOtpFromResponse(res.data, 'password reset')
+  const data = unwrapLaravelData<{ token?: string }>(res.data)
+  const token = data?.token
+  if (token) {
+    setPasswordResetSession(payload.email.toLowerCase(), token)
+  }
 }
 
-export async function resendRegistrationOtp(payload: PasswordResetOtpPayload) {
-  const res = await request.post<unknown>('/auth/otp/resend', payload)
+export async function resendRegistrationOtp() {
+  const res = await request.post<unknown>(endpoints.resendOtp, {})
   logOtpFromResponse(res.data, 'register resend')
+}
+
+export async function resendForgotPasswordOtp(email: string) {
+  const token = getPasswordResetToken()
+  if (!token) {
+    throw new Error('Reset session expired. Please request a new code.')
+  }
+  const res = await request.post<unknown>(endpoints.forgotResendOtp, {
+    email: email.toLowerCase(),
+    token,
+  })
+  logOtpFromResponse(res.data, 'forgot resend')
+  const data = unwrapLaravelData<{ token?: string }>(res.data)
+  if (data?.token) {
+    setPasswordResetSession(email.toLowerCase(), data.token)
+  }
+}
+
+export async function verifyForgotPasswordOtp(payload: VerifyOtpPayload) {
+  const token = getPasswordResetToken()
+  if (!token) {
+    throw new Error('Reset session expired. Please request a new code.')
+  }
+  const res = await request.post<unknown>(endpoints.forgotVerifyOtp, {
+    email: payload.email.toLowerCase(),
+    otp: payload.otp,
+    token,
+  })
+  logOtpFromResponse(res.data, 'forgot verify')
+  const data = unwrapLaravelData<{ token?: string }>(res.data)
+  if (data?.token) {
+    setPasswordResetSession(payload.email.toLowerCase(), data.token)
+  }
+}
+
+export async function resetPasswordWithToken(payload: {
+  email: string
+  password: string
+  password_confirmation: string
+}) {
+  const token = getPasswordResetToken()
+  const email = getPasswordResetEmail() ?? payload.email.toLowerCase()
+  if (!token) {
+    throw new Error('Reset session expired. Please start again from forgot password.')
+  }
+  await request.post<unknown>(endpoints.resetPassword, {
+    email,
+    password: payload.password,
+    password_confirmation: payload.password_confirmation,
+    token,
+  })
+  clearPasswordResetSession()
 }
 
 export async function verifyRegistrationOtp(
   payload: VerifyOtpPayload,
   handlers: AuthHandlers,
-  selectedRole: AuthRole,
 ) {
-  const verifyPayload = {
-    ...payload,
-    code: payload.otp,
-    verification_code: payload.otp,
-  }
-  const res = await request.post<unknown>('/auth/otp/verify', verifyPayload)
+  const res = await request.post<unknown>(endpoints.verifyOtp, {
+    otp: payload.otp,
+  })
   logOtpFromResponse(res.data, 'verify-otp')
 
-  // Registration already writes the login token to storage.
-  // OTP verification should validate/activate that session, not require a new token.
   if (handlers.authStrategy === 'http_only_cookie') {
     const currentUser = await handlers.refreshSession()
     if (!currentUser) {
@@ -210,14 +277,11 @@ export async function verifyRegistrationOtp(
   const refreshedUser = await handlers.refreshSession()
   const resolvedUser = refreshedUser ?? responseUser
   if (!resolvedUser) {
-    // Some APIs verify OTP successfully but don't return user payload,
-    // and profile endpoint may be unavailable. Keep role context so routing
-    // can still proceed to the correct dashboard.
     const fallbackUser: AuthUser = {
       id: payload.email,
       email: payload.email,
-      role: selectedRole,
-      roles: [selectedRole],
+      role: 'user',
+      roles: ['user'],
     }
     handlers.setUser(fallbackUser)
     return fallbackUser
@@ -225,16 +289,6 @@ export async function verifyRegistrationOtp(
   return resolvedUser
 }
 
-export function resolveDashboardPath(user: unknown, selectedRole: AuthRole) {
-  const roles = getUserRoles(extractUserFromAuthPayload(user))
-  if (roles.includes('admin')) return '/admin'
-  if (roles.includes('vendor')) return '/vendor/dashboard'
-  if (roles.includes('user')) return '/account/my-subscriptions'
-
-  const dashboardFromPolicy = roles
-    .map((role) => rolePolicy[role]?.dashboard)
-    .find((value): value is string => Boolean(value))
-
-  if (dashboardFromPolicy) return dashboardFromPolicy
-  return selectedRole === 'vendor' ? '/vendor/dashboard' : '/account/my-subscriptions'
+export function resolvePostLoginPath() {
+  return USER_HOME_PATH
 }

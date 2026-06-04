@@ -18,7 +18,6 @@ export const router = createBrowserRouter([
       publicRoutes,
       ...authRoutes,
       { path: "/unauthorized", element: suspensePage(Unauthorized) },
-      { path: "/dashboard", element: redirect("/account/my-subscriptions") },
       { path: "/admin", element: redirect("/admin/dashboard") },
       { path: "/admin/dashboard", element: suspensePage(AdminDashboard) },
       { path: "*", element: suspensePage(NotFound) },

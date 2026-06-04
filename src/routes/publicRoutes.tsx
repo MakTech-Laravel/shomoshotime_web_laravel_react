@@ -2,6 +2,7 @@ import { lazy } from "react";
 import { Navigate, type RouteObject } from "react-router-dom";
 
 import { FrontendLayout } from "@/layouts/frontend/FrontendLayout";
+import { ProtectedRoute } from "@/routes/ProtectedRoute";
 import { suspensePage } from "@/routes/routeUtils";
 
 const Home = lazy(() => import("@/pages/frontend/Home"));
@@ -31,14 +32,21 @@ export const publicRoutes: RouteObject = {
     { path: "/about", element: suspensePage(AboutUs) },
     { path: "/about-us", element: <Navigate to="/about" replace /> },
     { path: "/test", element: suspensePage(Test) },
-    { path: "/account", element: <Navigate to="/account/my-subscriptions" replace /> },
-    { path: "/account/my-subscriptions", element: suspensePage(UserAccountPage) },
-    { path: "/account/my-orders", element: suspensePage(UserAccountPage) },
-    { path: "/account/my-addresses", element: suspensePage(UserAccountPage) },
-    { path: "/account/my-wallet", element: suspensePage(UserAccountPage) },
-    { path: "/account/my-account", element: suspensePage(UserAccountPage) },
-    { path: "/user/dashboard", element: suspensePage(LegacyUserDashboardRedirect) },
-    { path: "/dashboard", element: suspensePage(LegacyUserDashboardRedirect) },
+    {
+      element: (
+        <ProtectedRoute forceAuth loginPath="/login/email" />
+      ),
+      children: [
+        { path: "/account", element: <Navigate to="/account/my-subscriptions" replace /> },
+        { path: "/account/my-subscriptions", element: suspensePage(UserAccountPage) },
+        { path: "/account/my-orders", element: suspensePage(UserAccountPage) },
+        { path: "/account/my-addresses", element: suspensePage(UserAccountPage) },
+        { path: "/account/my-wallet", element: suspensePage(UserAccountPage) },
+        { path: "/account/my-account", element: suspensePage(UserAccountPage) },
+        { path: "/user/dashboard", element: suspensePage(LegacyUserDashboardRedirect) },
+        { path: "/dashboard", element: suspensePage(LegacyUserDashboardRedirect) },
+      ],
+    },
     { path: "/:specialty/study-guides/:section", element: suspensePage(StudyGuideViewerPage) },
     { path: "/audio/spi", element: suspensePage(SpiAudioPage) },
     { path: "/:specialty/flashcards", element: suspensePage(SpecialtyFlashcardsPage) },

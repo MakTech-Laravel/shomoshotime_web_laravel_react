@@ -1,14 +1,12 @@
 import * as React from "react";
-import { useLocation, useNavigate, useSearchParams, Link } from "react-router-dom";
+import { useLocation, useNavigate, Link } from "react-router-dom";
 import { ArrowRight, Eye } from "lucide-react";
 
 import { useAuth } from "@/auth/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { getAuthErrorMessage, getAuthFieldErrors } from "@/features/auth/errorMessage";
-import { resolveAuthRole, saveAuthRole } from "@/features/auth/roleSelection";
-import { resolveDashboardPath, loginUserWithRole } from "@/features/auth/service";
-import { type AuthRole } from "@/features/auth/types";
+import { resolvePostLoginPath, loginUser } from "@/features/auth/service";
 
 function isUnsafePostLoginPath(pathname: string | undefined) {
   if (!pathname) return true;
@@ -20,43 +18,37 @@ function isUnsafePostLoginPath(pathname: string | undefined) {
   );
 }
 
-
 export default function LoginEmail() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [searchParams] = useSearchParams();
   const { setToken, setUser, refreshSession, resetAuthState, authStrategy } = useAuth();
 
   const [identifier, setIdentifier] = React.useState("");
   const [password, setPassword] = React.useState("");
-  const [role, setRole] = React.useState<AuthRole>("user");
   const [showPassword, setShowPassword] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = React.useState<Record<string, string>>({});
   const [loading, setLoading] = React.useState(false);
-
-  React.useEffect(() => {
-    const selectedRole = resolveAuthRole(searchParams.get("role"));
-    setRole(selectedRole);
-    saveAuthRole(selectedRole);
-  }, [searchParams]);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
     setError(null);
     setFieldErrors({});
-    saveAuthRole(role);
 
     try {
-      const loggedInUser = await loginUserWithRole(
-        {
-          email: identifier,
-          password,
-          role,
-        },
+      const { needsEmailVerification } = await loginUser(
+        { email: identifier, password },
         { authStrategy, setToken, setUser, refreshSession, resetAuthState },
       );
+
+      if (needsEmailVerification) {
+        navigate(
+          `/otp-verification?purpose=register&email=${encodeURIComponent(identifier)}`,
+          { replace: true },
+        );
+        return;
+      }
 
       const from = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname;
       if (from && !isUnsafePostLoginPath(from)) {
@@ -64,9 +56,7 @@ export default function LoginEmail() {
         return;
       }
 
-      navigate(resolveDashboardPath(loggedInUser, role), {
-        replace: true,
-      });
+      navigate(resolvePostLoginPath(), { replace: true });
     } catch (err) {
       const errors = getAuthFieldErrors(err);
       setFieldErrors(errors);
@@ -156,7 +146,7 @@ export default function LoginEmail() {
             <p className="text-base font-inter font-normal text-muted-foreground">
               Don't have an account?
             </p>
-            <Link to={`/register?role=${role}`} className="text-[#996e00] hover:underline">
+            <Link to="/register/email" className="text-[#996e00] hover:underline">
               Sign Up
             </Link>
           </div>

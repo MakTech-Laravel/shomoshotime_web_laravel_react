@@ -13,8 +13,6 @@ const ForgetPassword = lazy(() => import("@/pages/global/auth/ForgetPassword"));
 const OTPVerification = lazy(() => import("@/pages/global/auth/OTPVerification"));
 const ResetPassword = lazy(() => import("@/pages/global/auth/ResetPassword"));
 const Register = lazy(() => import("@/pages/global/auth/Register"));
-const AdminLogin = lazy(() => import("@/pages/global/auth/AdminLogin"));
-
 /** Guest-only auth screens (wrapped with GuestGate). */
 export const authRoutes: RouteObject[] = [
   {
@@ -52,10 +50,6 @@ export const authRoutes: RouteObject[] = [
       {
         path: "/register/email",
         element: <GuestGate>{suspensePage(Register)}</GuestGate>,
-      },
-      {
-        path: "/admin/login",
-        element: <GuestGate>{suspensePage(AdminLogin)}</GuestGate>,
       },
     ],
   },

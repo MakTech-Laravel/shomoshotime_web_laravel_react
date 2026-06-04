@@ -12,9 +12,7 @@ export type RolePolicyEntry = {
 export type RolePolicy = Record<string, RolePolicyEntry>
 
 export const defaultRolePolicy: RolePolicy = {
-  admin: { dashboard: '/admin', fallback: '/admin/login' },
-  vendor: { dashboard: '/vendor', fallback: '/login' },
-  user: { dashboard: '/account/my-subscriptions', fallback: '/login' },
+  user: { dashboard: '/account/my-subscriptions', fallback: '/login/email' },
 }
 
 function isPlainObject(v: unknown): v is Record<string, unknown> {

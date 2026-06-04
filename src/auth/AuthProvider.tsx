@@ -14,7 +14,10 @@ import { type AuthUser } from '@/auth/types'
 import { isSpatieSuperAdmin } from '@/auth/adminSpatie'
 import { getRoleLogoutPath } from '@/auth/rolePolicy'
 import { getUserRoles, hasAnyRole } from '@/auth/roles'
+import { resolveAuthEndpoints } from '@/config/authEndpoints'
 import { env } from '@/config/env'
+
+const authPaths = resolveAuthEndpoints()
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const initialToken = React.useMemo(() => getAccessToken(), [])
@@ -157,15 +160,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const roleLogout = roles.map((r) => getRoleLogoutPath(r)).find(Boolean)
         if (roleLogout) logoutPathCandidates.push(roleLogout)
       }
-      logoutPathCandidates.push(env.authLogoutPath, '/auth/logout', '/logout')
+      logoutPathCandidates.push(env.authLogoutPath, authPaths.logout)
 
       const uniquePaths = Array.from(new Set(logoutPathCandidates.filter(Boolean)))
       for (const path of uniquePaths) {
         try {
-          await api.post(path)
+          await api.delete(path)
           break
         } catch {
-          // try the next logout endpoint
+          try {
+            await api.post(path)
+            break
+          } catch {
+            // try the next logout endpoint
+          }
         }
       }
     } catch {

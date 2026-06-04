@@ -102,9 +102,9 @@ export const env = {
    * `local` = cross-tab until logout. `memory` = never survives reload.
    */
   bearerTokenPersistence: bearerTokenPersistenceFromEnv(),
-  /** Profile endpoint path (Laravel12 auth routes commonly use `/auth/profile`). */
-  authMePath: import.meta.env.VITE_AUTH_ME_PATH ?? '/auth/profile',
-  /** Logout endpoint path (Laravel12 auth routes commonly use `/auth/logout`). */
+  /** Profile probe — Shomoshotime: POST `/user/profile` (override with VITE_AUTH_ME_PATH). */
+  authMePath: import.meta.env.VITE_AUTH_ME_PATH ?? '/user/profile',
+  /** Logout — Shomoshotime: DELETE `/auth/logout` (override with VITE_AUTH_LOGOUT_PATH). */
   authLogoutPath: import.meta.env.VITE_AUTH_LOGOUT_PATH ?? '/auth/logout',
   /** Role parsing: `single` uses `user.role`, `multi` uses `user.roles` (array) */
   roleMode: roleModeFromEnv(),

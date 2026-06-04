@@ -1,12 +1,4 @@
-export type AuthRole = 'user' | 'vendor'
-
 export type LoginPayload = {
-  email: string
-  password: string
-  role: AuthRole
-}
-
-export type AdminLoginPayload = {
   email: string
   password: string
 }
@@ -18,7 +10,6 @@ export type RegisterPayload = {
   phone: string
   password: string
   password_confirmation: string
-  role: AuthRole
 }
 
 export type VerifyOtpPayload = {

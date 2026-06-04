@@ -1,9 +1,9 @@
-import { Navigate, useLocation } from "react-router-dom";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
 
-import { rolePolicy } from "@/auth/rolePolicy";
-import { getUserRoles, hasAnyRole, type Role } from "@/auth/roles";
+import { hasAnyRole, type Role } from "@/auth/roles";
 import { useAuth } from "@/auth/useAuth";
 import { env } from "@/config/env";
+import { USER_HOME_PATH } from "@/features/auth/paths";
 
 type ProtectedRouteProps = {
   /** Required role(s) for this route. Pass nothing to only require authentication. */
@@ -12,16 +12,16 @@ type ProtectedRouteProps = {
   loginPath?: string;
   /** Where wrong-role users land. Defaults to their own dashboard via rolePolicy. */
   fallbackPath?: string;
-  children: React.ReactNode;
+  /**
+   * When true, authentication is required even if `VITE_REQUIRE_AUTH=false`
+   * (e.g. `/account/*` must never be public).
+   */
+  forceAuth?: boolean;
+  children?: React.ReactNode;
 };
 
-function pickDashboardForUserRoles(roles: string[]): string {
-  if (roles.includes("admin")) return rolePolicy.admin?.dashboard ?? "/admin/dashboard";
-  for (const r of roles) {
-    const dash = rolePolicy[r]?.dashboard;
-    if (dash) return dash;
-  }
-  return "/account/my-subscriptions";
+function pickDashboardForUserRoles(): string {
+  return USER_HOME_PATH;
 }
 
 /**
@@ -33,13 +33,15 @@ export function ProtectedRoute({
   roles,
   loginPath = "/login",
   fallbackPath,
+  forceAuth = false,
   children,
 }: ProtectedRouteProps) {
   const { isAuthenticated, isSessionLoading, isUserLoading, user } = useAuth();
   const location = useLocation();
+  const mustAuthenticate = forceAuth || env.requireAuth;
 
-  if (!env.requireAuth) {
-    return <>{children}</>;
+  if (!mustAuthenticate) {
+    return <>{children ?? <Outlet />}</>;
   }
 
   if (isSessionLoading || isUserLoading) {
@@ -56,10 +58,9 @@ export function ProtectedRoute({
   }
 
   if (roles && !hasAnyRole(user, roles)) {
-    const userRoles = getUserRoles(user);
-    const target = fallbackPath ?? pickDashboardForUserRoles(userRoles);
+    const target = fallbackPath ?? pickDashboardForUserRoles();
     return <Navigate to={target} replace />;
   }
 
-  return <>{children}</>;
+  return <>{children ?? <Outlet />}</>;
 }

@@ -1,5 +1,51 @@
 import { type AuthUser } from '@/auth/types'
 
+function isTruthyFlag(value: unknown): boolean {
+  return value === true || value === 1 || value === '1' || value === 'true'
+}
+
+function avatarFromRecord(o: Record<string, unknown>): string | undefined {
+  const image = o.image ?? o.avatar ?? o.avatar_url ?? o.profile_photo_url
+  return typeof image === 'string' && image.length > 0 ? image : undefined
+}
+
+/** Map Laravel login/profile payloads (UserResource or auth `data` blob) to AuthUser. */
+export function mapApiUserRecord(raw: Record<string, unknown>): AuthUser {
+  const isAdmin = isTruthyFlag(raw.is_admin)
+  const id = raw.id ?? raw.user_id ?? raw.email
+  const routeRole =
+    typeof raw.role === 'string' && raw.role
+      ? raw.role
+      : isAdmin
+        ? 'admin'
+        : 'user'
+  const roles = Array.isArray(raw.roles)
+    ? (raw.roles as unknown[]).map(String).filter(Boolean)
+    : isAdmin
+      ? ['admin']
+      : [routeRole]
+
+  if (isAdminResourceShape(raw) || (isAdmin && !roles.includes('admin'))) {
+    return normalizeAdminAuthUser({
+      ...raw,
+      id,
+      role: 'admin',
+      roles: Array.from(new Set(['admin', ...roles])),
+    })
+  }
+
+  return {
+    ...(raw as unknown as AuthUser),
+    id: id as string | number,
+    name: typeof raw.name === 'string' ? raw.name : undefined,
+    email: typeof raw.email === 'string' ? raw.email : undefined,
+    avatar: avatarFromRecord(raw),
+    role: routeRole,
+    roles: Array.from(new Set(roles)),
+    is_premium: raw.is_premium as AuthUser['is_premium'],
+  }
+}
+
 function permissionNamesFromRaw(raw: unknown): string[] {
   if (!Array.isArray(raw)) return []
   const out: string[] = []
@@ -140,11 +186,9 @@ export function extractUserFromAuthPayload(body: unknown): AuthUser | null {
     if ('id' in a || 'email' in a) return normalizeAdminAuthUser(a)
   }
 
-  // Sometimes: { data: {...user fields...} }
-  if ('id' in o || 'email' in o) {
-    if (isAdminResourceShape(o)) return normalizeAdminAuthUser(o)
-    if (rolesLookLikeSpatieAdmin(o.roles)) return normalizeAdminAuthUser(o)
-    return o as unknown as AuthUser
+  // Sometimes: { data: {...user fields...} } or login payload with user_id
+  if ('id' in o || 'user_id' in o || 'email' in o) {
+    return mapApiUserRecord(o)
   }
   return null
 }

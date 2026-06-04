@@ -1,42 +1,20 @@
 import { Navigate, useLocation } from 'react-router-dom'
 
-import { rolePolicy } from '@/auth/rolePolicy'
-import { getUserRoles, hasAnyRole } from '@/auth/roles'
 import { useAuth } from '@/auth/useAuth'
 import { env } from '@/config/env'
-
-function pickDashboardForUserRoles(roles: string[]): string {
-  if (roles.includes('admin')) {
-    return rolePolicy.admin?.dashboard ?? '/admin'
-  }
-  for (const r of roles) {
-    const dash = rolePolicy[r]?.dashboard
-    if (dash) return dash
-  }
-  return '/account/my-subscriptions'
-}
+import { USER_HOME_PATH } from '@/features/auth/paths'
 
 /**
- * GuestGate protects guest-only pages (login/fallback pages).
- *
- * Rules:
- * - If not authenticated: render children.
- * - If authenticated:
- *   - loginMode=single: redirect to user's recommended dashboard.
- *   - loginMode=multi: redirect only if `roleScope` matches user's role(s); otherwise allow viewing the page.
+ * Guest-only pages (login, register). Authenticated users go to account home.
  */
 export function GuestGate({
-  roleScope,
   redirectTo,
   children,
 }: {
-  /** If set, only users with these roles get redirected away in multi-login mode. */
-  roleScope?: string | string[]
-  /** Optional override for where to send authenticated users. */
   redirectTo?: string
   children: React.ReactNode
 }) {
-  const { isAuthenticated, isSessionLoading, isUserLoading, user } = useAuth()
+  const { isAuthenticated, isSessionLoading, isUserLoading } = useAuth()
   const location = useLocation()
 
   if (!env.requireAuth) {
@@ -58,15 +36,5 @@ export function GuestGate({
     new URLSearchParams(location.search).get('purpose') === 'register'
   if (isRegisterOtpPage) return children
 
-  const roles = getUserRoles(user)
-  const recommended = redirectTo ?? pickDashboardForUserRoles(roles)
-
-  if (env.loginMode === 'single') {
-    return <Navigate to={recommended} replace />
-  }
-
-  // multi login mode: only redirect away if this is the user's own role login page
-  if (!roleScope) return children
-  if (!hasAnyRole(user, roleScope)) return children
-  return <Navigate to={recommended} replace />
+  return <Navigate to={redirectTo ?? USER_HOME_PATH} replace />
 }

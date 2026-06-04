@@ -1,36 +1,25 @@
 import * as React from "react";
 import { ArrowRight, Eye } from "lucide-react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { resolveAuthRole, saveAuthRole } from "@/features/auth/roleSelection";
 import { registerAndLoginUser } from "@/features/auth/service";
-import { type AuthRole } from "@/features/auth/types";
-
 
 export default function Register() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
   const [firstName, setFirstName] = React.useState("");
   const [lastName, setLastName] = React.useState("");
   const [email, setEmail] = React.useState("");
   const [phone, setPhone] = React.useState("");
   const [password, setPassword] = React.useState("");
   const [passwordConfirmation, setPasswordConfirmation] = React.useState("");
-  const [role, setRole] = React.useState<AuthRole>("user");
   const [acceptedTerms, setAcceptedTerms] = React.useState(false);
   const [showPassword, setShowPassword] = React.useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [success, setSuccess] = React.useState<string | null>(null);
-
-  React.useEffect(() => {
-    const selectedRole = resolveAuthRole(searchParams.get("role"));
-    setRole(selectedRole);
-    saveAuthRole(selectedRole);
-  }, [searchParams]);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -48,7 +37,6 @@ export default function Register() {
     }
 
     setLoading(true);
-    saveAuthRole(role);
 
     try {
       const loggedInUser = await registerAndLoginUser({
@@ -58,15 +46,12 @@ export default function Register() {
         phone,
         password,
         password_confirmation: passwordConfirmation,
-        role,
       });
       setSuccess("Registration successful. Redirecting to OTP verification...");
-      const verifiedRole = role;
       const verifiedEmail = encodeURIComponent(loggedInUser?.email ?? email);
-      navigate(
-        `/otp-verification?purpose=register&email=${verifiedEmail}&role=${verifiedRole}`,
-        { replace: true },
-      );
+      navigate(`/otp-verification?purpose=register&email=${verifiedEmail}`, {
+        replace: true,
+      });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Registration failed. Please try again.";
       setError(message);
@@ -85,7 +70,7 @@ export default function Register() {
             </h2>
             <p className="text-sm font-montserrat text-muted-foreground">
               Already have an account?{" "}
-              <Link to="/login" className="text-[#996e00] hover:underline">
+              <Link to="/login/email" className="text-[#996e00] hover:underline">
                 Log In
               </Link>
             </p>
@@ -99,8 +84,7 @@ export default function Register() {
                 </label>
                 <Input
                   type="text"
-                  className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                  placeholder="Enter your first name"
+                  placeholder="First name"
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
                   required
@@ -112,8 +96,7 @@ export default function Register() {
                 </label>
                 <Input
                   type="text"
-                  className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                  placeholder="Enter your last name"
+                  placeholder="Last name"
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
                   required
@@ -121,109 +104,89 @@ export default function Register() {
               </div>
             </div>
 
+            <div>
+              <label className="block text-sm font-normal text-muted-foreground mb-2">
+                Email <span className="text-brand-red">*</span>
+              </label>
+              <Input
+                type="email"
+                placeholder="Email address"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-normal text-muted-foreground mb-2">
+                Phone
+              </label>
+              <Input
+                type="tel"
+                placeholder="Phone number"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+              />
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-normal text-muted-foreground mb-2">
-                  Email <span className="text-brand-red">*</span>
+                  Password <span className="text-brand-red">*</span>
                 </label>
-                <Input
-                  type="email"
-                  className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                  placeholder="Enter your email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
+                <div className="relative">
+                  <Input
+                    type={showPassword ? "text" : "password"}
+                    placeholder="8+ characters"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    minLength={8}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    <Eye className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
               <div>
                 <label className="block text-sm font-normal text-muted-foreground mb-2">
-                  Phone Number <span className="text-brand-red">*</span>
+                  Confirm Password <span className="text-brand-red">*</span>
                 </label>
-                <Input
-                  type="tel"
-                  className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                  placeholder="Enter your phone number"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  required
-                />
+                <div className="relative">
+                  <Input
+                    type={showConfirmPassword ? "text" : "password"}
+                    placeholder="Confirm password"
+                    value={passwordConfirmation}
+                    onChange={(e) => setPasswordConfirmation(e.target.value)}
+                    required
+                    minLength={8}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword((prev) => !prev)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    <Eye className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-normal text-muted-foreground mb-2">
-                Password <span className="text-brand-red">*</span>
-              </label>
-              <div className="relative">
-                <Input
-                  type={showPassword ? "text" : "password"}
-                  className="w-full px-3 py-2 pr-10 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                  placeholder="8+ characters"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((prev) => !prev)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                >
-                  <Eye className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-normal text-muted-foreground mb-2">
-                Confirm Password <span className="text-brand-red">*</span>
-              </label>
-              <div className="relative">
-                <Input
-                  type={showConfirmPassword ? "text" : "password"}
-                  className="w-full px-3 py-2 pr-10 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                  placeholder="Confirm your password"
-                  value={passwordConfirmation}
-                  onChange={(e) => setPasswordConfirmation(e.target.value)}
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmPassword((prev) => !prev)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                >
-                  <Eye className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-
-            <div className="flex items-center">
+            <label className="flex items-start gap-2 text-sm text-muted-foreground">
               <input
                 type="checkbox"
                 checked={acceptedTerms}
                 onChange={(e) => setAcceptedTerms(e.target.checked)}
-                className="mr-2"
+                className="mt-1"
               />
-              <span className="text-sm text-muted-foreground">
-                I agree to the{" "}
-                <Link
-                  to="/terms"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-primary hover:underline"
-                >
-                  Terms of Service
-                </Link>{" "}
-                and{" "}
-                <Link
-                  to="/privacy-policy"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-primary hover:underline"
-                >
-                  Privacy Policy
-                </Link>
+              <span>
+                I agree to the Terms of Service and Privacy Policy.
               </span>
-            </div>
+            </label>
 
             {error ? (
               <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
@@ -241,10 +204,10 @@ export default function Register() {
                 type="submit"
                 variant="default"
                 disabled={loading}
-                className="flex justify-center max-w-xs w-full h-11 rounded-lg bg-brand px-6 text-base font-medium text-ice shadow-none hover:bg-brand/90"
+                className="flex justify-center w-full h-11 rounded-lg bg-brand px-6 text-base font-medium text-ice shadow-none hover:bg-brand/90"
               >
-                <span className="inline-flex items-center gap-2">
-                  {loading ? "Creating account..." : "Create Account"}
+                <span className="inline-flex items-center gap-2 bg-brand">
+                  {loading ? "Creating account..." : "Sign Up"}
                   <ArrowRight className="w-4 h-4" />
                 </span>
               </Button>

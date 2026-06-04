@@ -11,8 +11,6 @@ import {
 import { getUserAvatarSrc } from "@/lib/userAvatar";
 import { cn } from "@/lib/utils";
 
-const DEMO_DISPLAY_NAME = "Md Shariful Islam MakTech";
-
 type UserProfileBannerProps = {
   className?: string;
 };
@@ -22,7 +20,7 @@ export function UserProfileBanner({ className }: UserProfileBannerProps) {
   const displayName =
     user?.name?.trim() ||
     user?.email?.split("@")[0]?.trim() ||
-    DEMO_DISPLAY_NAME;
+    "Your account";
   const avatarSrc = getUserAvatarSrc(user);
 
   return (

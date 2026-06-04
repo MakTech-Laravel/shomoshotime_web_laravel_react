@@ -4,17 +4,17 @@ import { Input } from "@/components/ui/input";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/auth/useAuth";
 import { getAuthErrorMessage } from "@/features/auth/errorMessage";
-import { resolveAuthRole, saveAuthRole } from "@/features/auth/roleSelection";
 import { getAccessToken, getStoredAuthUser } from "@/auth/token";
 import {
-  requestPasswordResetOtp,
+  resendForgotPasswordOtp,
   resendRegistrationOtp,
-  resolveDashboardPath,
+  resolvePostLoginPath,
+  verifyForgotPasswordOtp,
   verifyRegistrationOtp,
 } from "@/features/auth/service";
-import { type AuthRole } from "@/features/auth/types";
 
-const OTP_LENGTH = 6;
+/** Matches Laravel `OTPRequest`: 4-digit numeric OTP. */
+const OTP_LENGTH = 4;
 const RESEND_WINDOW_MS = 5 * 60 * 1000;
 const RESEND_MAX_ATTEMPTS = 3;
 const RESEND_BAN_MS = 30 * 60 * 1000;
@@ -81,7 +81,6 @@ export default function OTPVerification() {
 
   const purpose = searchParams.get("purpose");
   const email = searchParams.get("email")?.trim() ?? "";
-  const role: AuthRole = resolveAuthRole(searchParams.get("role"));
   const limiterKey = React.useMemo(() => {
     if (!email) return null;
     return getLimiterStorageKey(purpose, email);
@@ -102,10 +101,6 @@ export default function OTPVerification() {
       }
     }
   }, [purpose, setToken, setUser]);
-
-  React.useEffect(() => {
-    saveAuthRole(role);
-  }, [role]);
 
   React.useEffect(() => {
     if (!limiterKey) {
@@ -164,13 +159,32 @@ export default function OTPVerification() {
 
     const otpCode = otp.join("");
     if (otpCode.length !== OTP_LENGTH) {
-      setError("Please enter the 6-digit verification code.");
+      setError(`Please enter the ${OTP_LENGTH}-digit verification code.`);
       return;
     }
 
-    // Existing forgot-password flow still uses this screen without register context.
+    if (purpose === "reset") {
+      if (!email) {
+        setError("Missing email. Please go back and try again.");
+        return;
+      }
+      setLoading(true);
+      try {
+        await verifyForgotPasswordOtp({ email: email.toLowerCase(), otp: otpCode });
+        navigate(
+          `/reset-password?email=${encodeURIComponent(email)}`,
+          { replace: true },
+        );
+      } catch (err) {
+        setError(getAuthErrorMessage(err, "OTP verification failed. Please try again."));
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
     if (purpose !== "register") {
-      navigate("/reset-password", { replace: true });
+      setError("Unknown verification flow. Please start again from login.");
       return;
     }
 
@@ -182,15 +196,13 @@ export default function OTPVerification() {
     const normalizedEmail = email.toLowerCase();
 
     setLoading(true);
-    saveAuthRole(role);
 
     try {
-      const loggedInUser = await verifyRegistrationOtp(
+      await verifyRegistrationOtp(
         { email: normalizedEmail, otp: otpCode },
         { authStrategy, setToken, setUser, refreshSession, resetAuthState },
-        role,
       );
-      navigate(resolveDashboardPath(loggedInUser, role), { replace: true });
+      navigate(resolvePostLoginPath(), { replace: true });
     } catch (err) {
       setError(getAuthErrorMessage(err, "OTP verification failed. Please try again."));
     } finally {
@@ -244,9 +256,9 @@ export default function OTPVerification() {
     setResending(true);
     try {
       if (purpose === "register") {
-        await resendRegistrationOtp({ email: normalizedEmail });
-      } else {
-        await requestPasswordResetOtp({ email: normalizedEmail });
+        await resendRegistrationOtp();
+      } else if (purpose === "reset") {
+        await resendForgotPasswordOtp(normalizedEmail);
       }
       limiter.attempts += 1;
       writeLimiterState(limiterKey, limiter);

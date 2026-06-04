@@ -24,11 +24,7 @@ function shouldAttachBearer(strategy: AuthStrategy) {
 }
 
 function isLoginRoute(pathname: string) {
-  return (
-    pathname === '/login' ||
-    pathname.startsWith('/login/') ||
-    pathname === '/admin/login'
-  )
+  return pathname === '/login' || pathname.startsWith('/login/')
 }
 
 function normalizePath(p: string) {
@@ -47,11 +43,7 @@ function redirectToLogin() {
   const next = encodeURIComponent(
     window.location.pathname + window.location.search,
   )
-  if (typeof window !== 'undefined' && window.location.pathname.startsWith('/admin')) {
-    window.location.assign(`/admin/login?next=${next}`)
-    return
-  }
-  window.location.assign(`/login?next=${next}`)
+  window.location.assign(`/login/email?next=${next}`)
 }
 
 export const api: AxiosInstance = axios.create({
