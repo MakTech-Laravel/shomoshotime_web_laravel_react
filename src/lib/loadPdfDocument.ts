@@ -1,6 +1,6 @@
 import type { PDFDocumentProxy } from "pdfjs-dist";
 
-import { PDF_DOCUMENT_OPTIONS, pdfjs } from "@/lib/configurePdfWorker";
+import { ensurePdfWorker, PDF_DOCUMENT_OPTIONS, pdfjs } from "@/lib/configurePdfWorker";
 import { isRemotePdfSource } from "@/lib/pdfFetchUrl";
 import { loadPdfBytes, resolvePdfAssetId } from "@/lib/loadPdfBytes";
 
@@ -26,7 +26,7 @@ export function isPdfDocumentCached(source: string | PdfLoadSources) {
 
 function isRetriablePdfError(error: unknown) {
   if (!(error instanceof Error)) return false;
-  return /404|unexpected server response|failed to fetch|network|worker was destroyed/i.test(
+  return /404|unexpected server response|failed to fetch|network|worker was destroyed|worker failed to load/i.test(
     error.message,
   );
 }
@@ -43,6 +43,7 @@ function appendCacheBuster(url: string, version?: string | number) {
  */
 async function openPdfFromSource(source: string, attempt = 0): Promise<PDFDocumentProxy> {
   try {
+    await ensurePdfWorker();
     const bytes = await loadPdfBytes(source);
     const loadingTask = pdfjs.getDocument({
       data: bytes.slice(),

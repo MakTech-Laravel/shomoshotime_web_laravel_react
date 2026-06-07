@@ -97,7 +97,20 @@ function validatePdfBytes(bytes: Uint8Array) {
   }
 }
 
-/** Study guides: axios hits the same API base that already serves guide metadata on live. */
+function isAxiosNetworkError(error: unknown) {
+  return (
+    axios.isAxiosError(error) &&
+    (error.code === "ERR_NETWORK" || !error.response)
+  );
+}
+
+function studyGuideProxyUrl(request: { path: string; params?: Record<string, string> }) {
+  const query = new URLSearchParams(request.params ?? {});
+  const qs = query.toString();
+  return resolveAbsolutePdfUrl(`/api/v1${request.path}${qs ? `?${qs}` : ""}`);
+}
+
+/** Study guides: axios (direct API) with same-origin fetch fallback via nginx proxy. */
 async function fetchStudyGuidePdfBytes(
   url: string,
   signal?: AbortSignal,
@@ -124,6 +137,15 @@ async function fetchStudyGuidePdfBytes(
     return bytes;
   } catch (error) {
     if (isAbortError(error)) throw error;
+
+    if (isAxiosNetworkError(error)) {
+      try {
+        return await fetchRemotePdfBytes(studyGuideProxyUrl(request), signal);
+      } catch (fallbackError) {
+        if (isAbortError(fallbackError)) throw fallbackError;
+      }
+    }
+
     throw new Error(axiosErrorMessage(error));
   }
 }

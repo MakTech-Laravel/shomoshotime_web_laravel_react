@@ -175,6 +175,11 @@ export function PdfStudyViewer({ pdfSources, fileName, className }: PdfStudyView
           return;
         }
 
+        if (/worker failed to load|fake worker|dynamically imported/i.test(message)) {
+          setLoadError("PDF viewer could not start. Please refresh the page.");
+          return;
+        }
+
         if (/failed to fetch|network error/i.test(message)) {
           setLoadError("Could not load this PDF. Check your connection and refresh the page.");
           return;
