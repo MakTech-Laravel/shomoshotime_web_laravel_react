@@ -1,8 +1,35 @@
 import { env } from "@/config/env";
 
-/** Strip API origin so dev can load PDFs through the Vite proxy (same-origin). */
+function isLocalApiHost(): boolean {
+  try {
+    const host = new URL(env.apiBaseUrl).hostname;
+    return host === "localhost" || host === "127.0.0.1" || host === "[::1]";
+  } catch {
+    return false;
+  }
+}
+
+function pathnameAndSearch(url: string): string {
+  try {
+    if (/^https?:\/\//i.test(url)) {
+      const parsed = new URL(url);
+      return `${parsed.pathname}${parsed.search}`;
+    }
+  } catch {
+    // fall through
+  }
+
+  return url.split("?")[0] + (url.includes("?") ? url.slice(url.indexOf("?")) : "");
+}
+
+/** Strip API origin so local dev can load PDFs through the Vite proxy (same-origin). */
 export function toProxiedAssetUrl(url: string): string {
   if (!url || typeof window === "undefined") return url;
+
+  // Remote API (e.g. production): keep absolute URLs — do not route through localhost proxy.
+  if (!isLocalApiHost()) {
+    return url;
+  }
 
   if (url.startsWith("/")) {
     return url;
@@ -22,9 +49,18 @@ export function toProxiedAssetUrl(url: string): string {
   return url;
 }
 
-/** Absolute URL for fetch (dev: Vite proxy on :5173; prod: API/storage origin). */
+/** Absolute URL for fetch (local dev: Vite proxy on :5173; remote API: direct origin). */
 export function resolveAbsolutePdfUrl(url: string): string {
   if (/^https?:\/\//i.test(url)) {
+    if (!isLocalApiHost()) {
+      return url;
+    }
+
+    const proxied = toProxiedAssetUrl(url);
+    if (typeof window !== "undefined" && proxied.startsWith("/")) {
+      return new URL(proxied, window.location.origin).href;
+    }
+
     return url;
   }
 
@@ -53,7 +89,18 @@ export function isStudyGuideStreamUrl(url: string): boolean {
 }
 
 export function isProxiedStorageUrl(url: string): boolean {
-  return toProxiedAssetUrl(url).startsWith("/storage/");
+  const resolved = toProxiedAssetUrl(url);
+  if (resolved.startsWith("/storage/")) return true;
+
+  try {
+    if (/^https?:\/\//i.test(resolved)) {
+      return new URL(resolved).pathname.startsWith("/storage/");
+    }
+  } catch {
+    // ignore
+  }
+
+  return false;
 }
 
 /** CMS / API PDFs (absolute, proxied API path, or public storage). */
@@ -69,8 +116,8 @@ export function parseStudyGuideStreamRequest(url: string): {
   params?: Record<string, string>;
 } | null {
   const proxied = toProxiedAssetUrl(url);
-  const pathOnly = proxied.split("?")[0] ?? proxied;
-  const match = pathOnly.match(/\/api\/v1\/content\/study-guides\/(\d+)\/file$/);
+  const pathOnly = pathnameAndSearch(proxied).split("?")[0] ?? proxied;
+  const match = pathOnly.match(/\/content\/study-guides\/(\d+)\/file$/);
 
   if (!match) {
     return null;

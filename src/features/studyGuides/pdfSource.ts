@@ -3,24 +3,27 @@ import { buildPdfLoadSources } from "@/lib/loadPdfDocument";
 import { toProxiedAssetUrl } from "@/lib/pdfFetchUrl";
 import type { PublicStudyGuide } from "@/features/studyGuides/types";
 
-/** Dev: same-origin path (Vite proxy). Prod: full API URL. */
+/** Stream endpoint from configured API base (Postman-verified source of truth). */
 export function studyGuidePdfStreamUrl(guideId: number) {
-  if (import.meta.env.DEV) {
-    return `/api/v1/content/study-guides/${guideId}/file`;
-  }
-
   const base = env.apiBaseUrl.replace(/\/$/, "");
   return `${base}/content/study-guides/${guideId}/file`;
 }
 
 export function resolveStudyGuidePdfSources(guide: PublicStudyGuide) {
   const version = guide.updated_at ?? guide.id;
+  const apiPath = studyGuidePdfStreamUrl(guide.id);
   const storageSrc =
     guide.file_src && !guide.file_src.includes("no_img.jpg") ? guide.file_src : undefined;
   const storagePath = storageSrc
     ? toProxiedAssetUrl(storageSrc)
-    : toProxiedAssetUrl(guide.file_url);
-  const apiPath = studyGuidePdfStreamUrl(guide.id);
+    : guide.file_url
+      ? toProxiedAssetUrl(guide.file_url)
+      : undefined;
 
-  return buildPdfLoadSources(storagePath, apiPath, version);
+  // Prefer API stream (server-resolved PDF); storage URL is fallback only.
+  if (storagePath && storagePath !== apiPath) {
+    return buildPdfLoadSources(apiPath, storagePath, version);
+  }
+
+  return buildPdfLoadSources(apiPath, undefined, version);
 }
