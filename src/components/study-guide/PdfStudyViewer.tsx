@@ -183,6 +183,13 @@ export function PdfStudyViewer({ pdfSources, fileName, className }: PdfStudyView
           return;
         }
 
+        if (/403|forbidden/i.test(message)) {
+          setLoadError(
+            "Access to this study guide PDF was denied. Refresh the page or contact support if the problem continues.",
+          );
+          return;
+        }
+
         setLoadError(
           /404|not found/i.test(message)
             ? "This study guide PDF is missing on the server. Please re-upload the file from the admin panel."

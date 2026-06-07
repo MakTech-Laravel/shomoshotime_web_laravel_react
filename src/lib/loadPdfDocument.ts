@@ -26,7 +26,7 @@ export function isPdfDocumentCached(source: string | PdfLoadSources) {
 
 function isRetriablePdfError(error: unknown) {
   if (!(error instanceof Error)) return false;
-  return /404|403|unexpected server response|failed to fetch|network|worker was destroyed/i.test(
+  return /404|unexpected server response|failed to fetch|network|worker was destroyed/i.test(
     error.message,
   );
 }
@@ -80,13 +80,15 @@ export async function loadPdfDocument(source: string | PdfLoadSources): Promise<
       (url, index, list): url is string => Boolean(url) && list.indexOf(url) === index,
     );
 
+    let primaryError: unknown;
     let lastError: unknown;
-    for (const url of attempts) {
+    for (const [index, url] of attempts.entries()) {
       try {
         const pdf = await openPdfFromSource(url);
         documentCache.set(key, pdf);
         return pdf;
       } catch (error) {
+        if (index === 0) primaryError = error;
         lastError = error;
         if (!isRetriablePdfError(error)) {
           throw error;
@@ -94,8 +96,9 @@ export async function loadPdfDocument(source: string | PdfLoadSources): Promise<
       }
     }
 
-    throw lastError instanceof Error
-      ? lastError
+    const bestError = primaryError ?? lastError;
+    throw bestError instanceof Error
+      ? bestError
       : new Error("Unable to load this PDF. The file may be missing on the server.");
   })();
 
