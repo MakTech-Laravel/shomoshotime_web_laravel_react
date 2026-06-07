@@ -1,12 +1,15 @@
 import { env } from "@/config/env";
 
-function isLocalApiHost(): boolean {
+function apiOrigin(): string {
   try {
-    const host = new URL(env.apiBaseUrl).hostname;
-    return host === "localhost" || host === "127.0.0.1" || host === "[::1]";
+    return new URL(env.apiBaseUrl).origin;
   } catch {
-    return false;
+    return "";
   }
+}
+
+function isLocalhostHostname(hostname: string): boolean {
+  return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "[::1]";
 }
 
 function pathnameAndSearch(url: string): string {
@@ -22,52 +25,64 @@ function pathnameAndSearch(url: string): string {
   return url.split("?")[0] + (url.includes("?") ? url.slice(url.indexOf("?")) : "");
 }
 
-/** Strip API origin so local dev can load PDFs through the Vite proxy (same-origin). */
-export function toProxiedAssetUrl(url: string): string {
-  if (!url || typeof window === "undefined") return url;
-
-  // Remote API (e.g. production): keep absolute URLs — do not route through localhost proxy.
-  if (!isLocalApiHost()) {
-    return url;
-  }
-
-  if (url.startsWith("/")) {
-    return url;
-  }
+/** Rewrite localhost URLs from the API to the configured live API origin. */
+export function normalizeApiAssetUrl(url: string): string {
+  if (!url) return url;
 
   try {
-    const target = new URL(url);
-    const apiOrigin = new URL(env.apiBaseUrl).origin;
-
-    if (target.origin === apiOrigin) {
-      return `${target.pathname}${target.search}`;
+    const parsed = new URL(url);
+    if (isLocalhostHostname(parsed.hostname)) {
+      const origin = apiOrigin();
+      if (origin) {
+        return `${origin}${parsed.pathname}${parsed.search}`;
+      }
     }
   } catch {
-    return url;
+    // not an absolute URL
   }
 
   return url;
 }
 
-/** Absolute URL for fetch (local dev: Vite proxy on :5173; remote API: direct origin). */
-export function resolveAbsolutePdfUrl(url: string): string {
-  if (/^https?:\/\//i.test(url)) {
-    if (!isLocalApiHost()) {
-      return url;
-    }
+function stripApiOriginToRelative(url: string): string | null {
+  const normalized = normalizeApiAssetUrl(url);
 
-    const proxied = toProxiedAssetUrl(url);
-    if (typeof window !== "undefined" && proxied.startsWith("/")) {
-      return new URL(proxied, window.location.origin).href;
+  try {
+    const target = new URL(normalized);
+    const origin = apiOrigin();
+    if (origin && target.origin === origin) {
+      return `${target.pathname}${target.search}`;
     }
+  } catch {
+    return null;
+  }
 
+  return null;
+}
+
+/** Strip API origin so PDFs load through same-origin proxy (Vite dev / nginx prod). */
+export function toProxiedAssetUrl(url: string): string {
+  if (!url || typeof window === "undefined") return url;
+
+  if (url.startsWith("/")) {
     return url;
   }
 
-  const proxied = toProxiedAssetUrl(url);
+  const relative = stripApiOriginToRelative(url);
+  return relative ?? url;
+}
+
+/** Absolute URL for fetch (browser: same-origin proxy; SSR/build: direct API origin). */
+export function resolveAbsolutePdfUrl(url: string): string {
+  const normalized = normalizeApiAssetUrl(url);
+  const proxied = toProxiedAssetUrl(normalized);
 
   if (typeof window !== "undefined" && proxied.startsWith("/")) {
     return new URL(proxied, window.location.origin).href;
+  }
+
+  if (/^https?:\/\//i.test(proxied)) {
+    return proxied;
   }
 
   const base = env.apiBaseUrl.replace(/\/$/, "");
@@ -80,7 +95,7 @@ export function resolveAbsolutePdfUrl(url: string): string {
     const path = proxied.startsWith("/") ? proxied : `/${proxied}`;
     return `${origin}${path}`;
   } catch {
-    return url;
+    return normalized;
   }
 }
 

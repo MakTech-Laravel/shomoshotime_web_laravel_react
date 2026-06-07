@@ -1,4 +1,5 @@
 import { api } from "@/api/client";
+import { normalizeApiAssetUrl } from "@/lib/pdfFetchUrl";
 import { unwrapLaravelData } from "@/api/laravelResponse";
 import type { PublicStudyGuide } from "@/features/studyGuides/types";
 import type { SpecialtySlug } from "@/data/specialtyResources";
@@ -11,8 +12,10 @@ function normalizeGuide(raw: unknown): PublicStudyGuide | null {
   const id = typeof o.id === "number" ? o.id : Number(o.id);
   if (!Number.isFinite(id)) return null;
 
-  const fileUrl = typeof o.file_url === "string" ? o.file_url : "";
-  const fileSrc = typeof o.file_src === "string" ? o.file_src : undefined;
+  const fileUrl =
+    typeof o.file_url === "string" ? normalizeApiAssetUrl(o.file_url) : "";
+  const fileSrc =
+    typeof o.file_src === "string" ? normalizeApiAssetUrl(o.file_src) : undefined;
   const slug = typeof o.slug === "string" ? o.slug : "";
   const title = typeof o.title === "string" ? o.title : "";
   const hasFile = o.has_file === true;

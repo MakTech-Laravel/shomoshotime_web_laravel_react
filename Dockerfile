@@ -30,9 +30,16 @@ RUN npm run build
 # ─── Stage 2: Serve ──────────────────────────────────────────────────────────
 FROM nginx:1.27-alpine AS runner
 
+ARG VITE_API_BASE_URL
+
 RUN rm /etc/nginx/conf.d/default.conf
 
 COPY nginx.conf /etc/nginx/conf.d/app.conf
+
+# Bake API upstream into nginx proxy (derived from VITE_API_BASE_URL build arg).
+RUN API_ORIGIN="$(echo "$VITE_API_BASE_URL" | sed -E 's#(/api)?/v1/?$##')" && \
+    API_HOST="$(echo "$API_ORIGIN" | sed -E 's#^https?://##')" && \
+    sed -i "s|__API_ORIGIN__|${API_ORIGIN}|g; s|__API_HOST__|${API_HOST}|g" /etc/nginx/conf.d/app.conf
 
 COPY --from=builder /app/dist /usr/share/nginx/html
 
