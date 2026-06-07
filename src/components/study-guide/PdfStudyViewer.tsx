@@ -36,7 +36,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { env } from "@/config/env";
 import { loadPdfBytes } from "@/lib/loadPdfBytes";
 import { isPdfDocumentCached, loadPdfDocument, type PdfLoadSources } from "@/lib/loadPdfDocument";
 import { searchPdfText } from "@/lib/pdfTextSearch";
@@ -177,9 +176,7 @@ export function PdfStudyViewer({ pdfSources, fileName, className }: PdfStudyView
         }
 
         if (/failed to fetch|network error/i.test(message)) {
-          setLoadError(
-            `Could not load this PDF from the server (${env.apiBaseUrl}). Check your connection and refresh this page.`,
-          );
+          setLoadError("Could not load this PDF. Check your connection and refresh the page.");
           return;
         }
 
