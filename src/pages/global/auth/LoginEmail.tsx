@@ -6,17 +6,8 @@ import { useAuth } from "@/auth/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { getAuthErrorMessage, getAuthFieldErrors } from "@/features/auth/errorMessage";
+import { resolveIntendedPath } from "@/features/auth/paths";
 import { resolvePostLoginPath, loginUser } from "@/features/auth/service";
-
-function isUnsafePostLoginPath(pathname: string | undefined) {
-  if (!pathname) return true;
-  return (
-    pathname === "/unauthorized" ||
-    pathname === "/login" ||
-    pathname.startsWith("/login/") ||
-    pathname.startsWith("/otp-verification")
-  );
-}
 
 export default function LoginEmail() {
   const navigate = useNavigate();
@@ -50,9 +41,9 @@ export default function LoginEmail() {
         return;
       }
 
-      const from = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname;
-      if (from && !isUnsafePostLoginPath(from)) {
-        navigate(from, { replace: true });
+      const intendedPath = resolveIntendedPath(location);
+      if (intendedPath) {
+        navigate(intendedPath, { replace: true });
         return;
       }
 

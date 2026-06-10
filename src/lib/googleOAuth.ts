@@ -16,6 +16,10 @@ export function getGoogleClientIdIssue(clientId: string | undefined): GoogleClie
   return null
 }
 
+export function isGoogleOAuthConfigured(clientId: string | undefined): boolean {
+  return getGoogleClientIdIssue(clientId) === null
+}
+
 export function googleClientIdHelpMessage(issue: GoogleClientIdIssue): string {
   if (issue === 'missing') {
     return 'Set VITE_GOOGLE_CLIENT_ID and GOOGLE_CLIENT_ID in your .env files.'

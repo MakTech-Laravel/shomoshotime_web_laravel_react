@@ -6,6 +6,7 @@ import { GoogleIcon } from "@/components/auth/AuthSocialIcons";
 import { useAuth } from "@/auth/useAuth";
 import { env } from "@/config/env";
 import { getAuthErrorMessage } from "@/features/auth/errorMessage";
+import { resolveIntendedPath } from "@/features/auth/paths";
 import { googleLoginUser, resolvePostLoginPath } from "@/features/auth/service";
 import { getGoogleClientIdIssue, googleClientIdHelpMessage } from "@/lib/googleOAuth";
 import { cn } from "@/lib/utils";
@@ -15,17 +16,32 @@ type GoogleSignInButtonProps = {
   className?: string;
 };
 
-function isUnsafePostLoginPath(pathname: string | undefined) {
-  if (!pathname) return true;
+function GoogleSignInButtonDisabled({
+  label,
+  className,
+  issue,
+}: GoogleSignInButtonProps & { issue: NonNullable<ReturnType<typeof getGoogleClientIdIssue>> }) {
   return (
-    pathname === "/unauthorized" ||
-    pathname === "/login" ||
-    pathname.startsWith("/login/") ||
-    pathname.startsWith("/register")
+    <div className="space-y-2">
+      <button
+        type="button"
+        disabled
+        className={cn(
+          "relative flex h-[52px] w-full cursor-not-allowed items-center justify-center rounded-none border border-[#d1d1d1] bg-[#f5f5f5] px-4 font-montserrat text-[15px] font-normal text-[#999999]",
+          className,
+        )}
+      >
+        <GoogleIcon className="absolute left-4 size-5 opacity-50" />
+        {label}
+      </button>
+      <p className="text-center font-montserrat text-[13px] text-[#996e00]">
+        {googleClientIdHelpMessage(issue)}
+      </p>
+    </div>
   );
 }
 
-export function GoogleSignInButton({ label, className }: GoogleSignInButtonProps) {
+function GoogleSignInButtonActive({ label, className }: GoogleSignInButtonProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const { setToken, setUser, refreshSession, resetAuthState, authStrategy } = useAuth();
@@ -43,9 +59,9 @@ export function GoogleSignInButton({ label, className }: GoogleSignInButtonProps
           { authStrategy, setToken, setUser, refreshSession, resetAuthState },
         );
 
-        const from = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname;
-        if (from && !isUnsafePostLoginPath(from)) {
-          navigate(from, { replace: true });
+        const intendedPath = resolveIntendedPath(location);
+        if (intendedPath) {
+          navigate(intendedPath, { replace: true });
           return;
         }
         navigate(resolvePostLoginPath(), { replace: true });
@@ -59,28 +75,6 @@ export function GoogleSignInButton({ label, className }: GoogleSignInButtonProps
       setError("Google sign-in was cancelled or could not start.");
     },
   });
-
-  const clientIdIssue = getGoogleClientIdIssue(env.googleClientId);
-  if (clientIdIssue) {
-    return (
-      <div className="space-y-2">
-        <button
-          type="button"
-          disabled
-          className={cn(
-            "relative flex h-[52px] w-full cursor-not-allowed items-center justify-center rounded-none border border-[#d1d1d1] bg-[#f5f5f5] px-4 font-montserrat text-[15px] font-normal text-[#999999]",
-            className,
-          )}
-        >
-          <GoogleIcon className="absolute left-4 size-5 opacity-50" />
-          {label}
-        </button>
-        <p className="text-center font-montserrat text-[13px] text-[#996e00]">
-          {googleClientIdHelpMessage(clientIdIssue)}
-        </p>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-2">
@@ -103,4 +97,13 @@ export function GoogleSignInButton({ label, className }: GoogleSignInButtonProps
       ) : null}
     </div>
   );
+}
+
+export function GoogleSignInButton({ label, className }: GoogleSignInButtonProps) {
+  const clientIdIssue = getGoogleClientIdIssue(env.googleClientId);
+  if (clientIdIssue) {
+    return <GoogleSignInButtonDisabled label={label} className={className} issue={clientIdIssue} />;
+  }
+
+  return <GoogleSignInButtonActive label={label} className={className} />;
 }
