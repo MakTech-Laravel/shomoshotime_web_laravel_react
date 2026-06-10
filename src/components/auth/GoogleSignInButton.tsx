@@ -6,6 +6,7 @@ import { GoogleIcon } from "@/components/auth/AuthSocialIcons";
 import { useAuth } from "@/auth/useAuth";
 import { env } from "@/config/env";
 import { getAuthErrorMessage } from "@/features/auth/errorMessage";
+import { resolveIntendedPath } from "@/features/auth/paths";
 import { googleLoginUser, resolvePostLoginPath } from "@/features/auth/service";
 import { getGoogleClientIdIssue, googleClientIdHelpMessage } from "@/lib/googleOAuth";
 import { cn } from "@/lib/utils";
@@ -14,16 +15,6 @@ type GoogleSignInButtonProps = {
   label: string;
   className?: string;
 };
-
-function isUnsafePostLoginPath(pathname: string | undefined) {
-  if (!pathname) return true;
-  return (
-    pathname === "/unauthorized" ||
-    pathname === "/login" ||
-    pathname.startsWith("/login/") ||
-    pathname.startsWith("/register")
-  );
-}
 
 function GoogleSignInButtonDisabled({
   label,
@@ -68,9 +59,9 @@ function GoogleSignInButtonActive({ label, className }: GoogleSignInButtonProps)
           { authStrategy, setToken, setUser, refreshSession, resetAuthState },
         );
 
-        const from = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname;
-        if (from && !isUnsafePostLoginPath(from)) {
-          navigate(from, { replace: true });
+        const intendedPath = resolveIntendedPath(location);
+        if (intendedPath) {
+          navigate(intendedPath, { replace: true });
           return;
         }
         navigate(resolvePostLoginPath(), { replace: true });

@@ -47,11 +47,16 @@ export const publicRoutes: RouteObject = {
         { path: "/dashboard", element: suspensePage(LegacyUserDashboardRedirect) },
       ],
     },
-    { path: "/:specialty/study-guides/:section", element: suspensePage(StudyGuideViewerPage) },
     { path: "/audio/spi", element: suspensePage(SpiAudioPage) },
-    { path: "/:specialty/flashcards", element: suspensePage(SpecialtyFlashcardsPage) },
-    { path: "/:specialty/flashcards/:deck", element: suspensePage(SpecialtyFlashcardsPage) },
-    { path: "/:specialty/practice-questions", element: suspensePage(SpecialtyPracticePage) },
-    { path: "/:specialty/practice-questions/:deck", element: suspensePage(SpecialtyPracticePage) },
+    {
+      element: <ProtectedRoute forceAuth loginPath="/login" />,
+      children: [
+        { path: "/:specialty/study-guides/:section", element: suspensePage(StudyGuideViewerPage) },
+        { path: "/:specialty/flashcards", element: suspensePage(SpecialtyFlashcardsPage) },
+        { path: "/:specialty/flashcards/:deck", element: suspensePage(SpecialtyFlashcardsPage) },
+        { path: "/:specialty/practice-questions", element: suspensePage(SpecialtyPracticePage) },
+        { path: "/:specialty/practice-questions/:deck", element: suspensePage(SpecialtyPracticePage) },
+      ],
+    },
   ],
 };
