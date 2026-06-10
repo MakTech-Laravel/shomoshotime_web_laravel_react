@@ -25,7 +25,32 @@ function isUnsafePostLoginPath(pathname: string | undefined) {
   );
 }
 
-export function GoogleSignInButton({ label, className }: GoogleSignInButtonProps) {
+function GoogleSignInButtonDisabled({
+  label,
+  className,
+  issue,
+}: GoogleSignInButtonProps & { issue: NonNullable<ReturnType<typeof getGoogleClientIdIssue>> }) {
+  return (
+    <div className="space-y-2">
+      <button
+        type="button"
+        disabled
+        className={cn(
+          "relative flex h-[52px] w-full cursor-not-allowed items-center justify-center rounded-none border border-[#d1d1d1] bg-[#f5f5f5] px-4 font-montserrat text-[15px] font-normal text-[#999999]",
+          className,
+        )}
+      >
+        <GoogleIcon className="absolute left-4 size-5 opacity-50" />
+        {label}
+      </button>
+      <p className="text-center font-montserrat text-[13px] text-[#996e00]">
+        {googleClientIdHelpMessage(issue)}
+      </p>
+    </div>
+  );
+}
+
+function GoogleSignInButtonActive({ label, className }: GoogleSignInButtonProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const { setToken, setUser, refreshSession, resetAuthState, authStrategy } = useAuth();
@@ -60,28 +85,6 @@ export function GoogleSignInButton({ label, className }: GoogleSignInButtonProps
     },
   });
 
-  const clientIdIssue = getGoogleClientIdIssue(env.googleClientId);
-  if (clientIdIssue) {
-    return (
-      <div className="space-y-2">
-        <button
-          type="button"
-          disabled
-          className={cn(
-            "relative flex h-[52px] w-full cursor-not-allowed items-center justify-center rounded-none border border-[#d1d1d1] bg-[#f5f5f5] px-4 font-montserrat text-[15px] font-normal text-[#999999]",
-            className,
-          )}
-        >
-          <GoogleIcon className="absolute left-4 size-5 opacity-50" />
-          {label}
-        </button>
-        <p className="text-center font-montserrat text-[13px] text-[#996e00]">
-          {googleClientIdHelpMessage(clientIdIssue)}
-        </p>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-2">
       <button
@@ -103,4 +106,13 @@ export function GoogleSignInButton({ label, className }: GoogleSignInButtonProps
       ) : null}
     </div>
   );
+}
+
+export function GoogleSignInButton({ label, className }: GoogleSignInButtonProps) {
+  const clientIdIssue = getGoogleClientIdIssue(env.googleClientId);
+  if (clientIdIssue) {
+    return <GoogleSignInButtonDisabled label={label} className={className} issue={clientIdIssue} />;
+  }
+
+  return <GoogleSignInButtonActive label={label} className={className} />;
 }
