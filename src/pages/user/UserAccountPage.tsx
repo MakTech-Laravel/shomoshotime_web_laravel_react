@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 
 import { AccountPlaceholderPanel } from "@/components/user/AccountPlaceholderPanel";
+import { AccountSettingsPanel } from "@/components/user/AccountSettingsPanel";
 import { SubscriptionsPanel } from "@/components/user/SubscriptionsPanel";
 import { UserAccountLayout } from "@/components/user/UserAccountLayout";
 import { parseUserAccountViewFromPath } from "@/lib/userAccountNav";
@@ -45,6 +46,8 @@ export default function UserAccountPage() {
     <UserAccountLayout>
       {view === "subscriptions" ? (
         <SubscriptionsPanel />
+      ) : view === "account" ? (
+        <AccountSettingsPanel />
       ) : (
         <AccountPlaceholderPanel title={meta.title} description={meta.description} />
       )}

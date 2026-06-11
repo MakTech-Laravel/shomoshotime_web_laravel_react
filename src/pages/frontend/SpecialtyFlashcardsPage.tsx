@@ -16,16 +16,15 @@ export default function SpecialtyFlashcardsPage() {
     deckSlug,
   );
 
-  const cards = useMemo(() => {
-    if (apiCards.length > 0) {
-      return apiCards.map((c) => ({
+  const cards = useMemo(
+    () =>
+      apiCards.map((c) => ({
         id: c.id,
         question: c.question,
         answer: c.answer,
-      }));
-    }
-    return deck?.cards ?? [];
-  }, [apiCards, deck?.cards]);
+      })),
+    [apiCards],
+  );
 
   const handleCardProgress = useCallback(
     (cardId: number) => {

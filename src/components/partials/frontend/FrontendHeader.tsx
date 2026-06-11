@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { FrontendMobileNav } from "@/components/partials/frontend/FrontendMobileNav";
 import { HeaderAvatar } from "@/components/ui/HeaderAvatar";
+import { useLearningNav } from "@/features/learning/LearningNavContext";
 import { useStudyGuideNav } from "@/features/studyGuides/StudyGuideNavContext";
 import {
   buildSpecialtyDropdownLinks,
@@ -343,6 +344,7 @@ function DesktopNavDropdown({ item }: { item: NavItem & { children: NavDropdownL
 
 function useNavItems(): NavItem[] {
   const { getNavChildren, isReady } = useStudyGuideNav();
+  const { getFlashcardNavChildren, getPracticeNavChildren } = useLearningNav();
 
   return NAV_ITEM_DEFS.map((item) => {
     if (!item.specialty) {
@@ -355,7 +357,11 @@ function useNavItems(): NavItem[] {
       children: buildSpecialtyDropdownLinks(
         item.audioHref,
         getNavChildren(item.specialty),
-        { studyGuidesReady: isReady },
+        {
+          studyGuidesReady: isReady,
+          flashcardChildren: getFlashcardNavChildren(item.specialty),
+          practiceChildren: getPracticeNavChildren(item.specialty),
+        },
       ),
     };
   });

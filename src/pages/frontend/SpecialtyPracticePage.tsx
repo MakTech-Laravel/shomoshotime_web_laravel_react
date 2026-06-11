@@ -13,10 +13,7 @@ export default function SpecialtyPracticePage() {
   const deck = getPracticeDeck(specialty, deckSlug);
   const { questions: apiQuestions } = usePracticeForDeck(specialty as SpecialtySlug, deckSlug);
 
-  const questions = useMemo(() => {
-    if (apiQuestions.length > 0) return apiQuestions;
-    return deck?.questions ?? [];
-  }, [apiQuestions, deck?.questions]);
+  const questions = useMemo(() => apiQuestions, [apiQuestions]);
 
   useEffect(() => {
     if (deck) {

@@ -1,3 +1,4 @@
+/** Orders, addresses, and wallet tabs — no backend list APIs yet; replace body when endpoints exist. */
 type AccountPlaceholderPanelProps = {
   title: string;
   description: string;

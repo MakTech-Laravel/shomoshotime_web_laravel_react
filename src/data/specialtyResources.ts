@@ -87,81 +87,12 @@ export type PracticeDeckView = {
   questions: PracticeQuestion[];
 };
 
-/** Demo flashcards shown on every deck until deck-specific content is added. */
-const DEMO_FLASHCARDS: FlashcardItem[] = [
-  {
-    question: "What is ultrasound imaging?",
-    answer:
-      "A diagnostic technique that uses high-frequency sound waves to create images of structures inside the body based on reflected echoes.",
-  },
-  {
-    question: "What is the Doppler effect?",
-    answer:
-      "A change in frequency of a wave due to relative motion between the source and receiver.",
-  },
-  {
-    question: "What is axial resolution?",
-    answer:
-      "The ability to distinguish two structures lying parallel to the ultrasound beam, primarily related to spatial pulse length.",
-  },
-  {
-    question: "What is the primary role of ultrasound gel?",
-    answer:
-      "To eliminate air between the transducer and skin so sound energy can transmit efficiently into the body.",
-  },
-  {
-    question: "What does ALARA stand for in sonography?",
-    answer:
-      "As Low As Reasonably Achievable — minimizing patient exposure while obtaining diagnostic information.",
-  },
-];
-
-/** Demo practice questions shown on every deck until deck-specific content is added. */
-const DEMO_PRACTICE_QUESTIONS: PracticeQuestion[] = [
-  {
-    prompt: "What is the primary effect of shadowing artifacts in ultrasound imaging?",
-    options: [
-      "They create bright areas behind structures that transmit sound well",
-      "They appear as dark areas beyond dense structures",
-      "They enhance the overall image quality",
-      "They indicate the presence of fluid-filled structures",
-    ],
-    correctIndex: 1,
-    feedbackCorrect:
-      "Correct — shadowing appears as anechoic or dark areas distal to strongly attenuating structures.",
-  },
-  {
-    prompt: "Which Doppler angle is generally closest to ideal for spectral analysis?",
-    options: ["0°", "90°", "45–60°", "180°"],
-    correctIndex: 2,
-    feedbackCorrect:
-      "Correct — angles around 45–60° often balance good Doppler shift with practical imaging.",
-  },
-  {
-    prompt: "What best describes the duty factor in pulsed ultrasound?",
-    options: [
-      "Time the transducer is receiving divided by total time",
-      "Time the transducer is transmitting divided by pulse repetition period",
-      "Peak rarefactional pressure divided by frequency",
-      "Wavelength divided by PRF",
-    ],
-    correctIndex: 1,
-    feedbackCorrect:
-      "Correct — duty factor is transmit time divided by the pulse repetition period.",
-  },
-];
-
-/** Optional per-deck overrides (API/content later). Falls back to demo set. */
-const FLASHCARD_CONTENT_BY_DECK: Partial<Record<string, FlashcardItem[]>> = {};
-
-const PRACTICE_CONTENT_BY_DECK: Partial<Record<string, PracticeQuestion[]>> = {};
-
-function resolveFlashcardCards(_specialty: string, deckSlug: string): FlashcardItem[] {
-  return FLASHCARD_CONTENT_BY_DECK[deckSlug] ?? DEMO_FLASHCARDS;
+function resolveFlashcardCards(_specialty: string, _deckSlug: string): FlashcardItem[] {
+  return [];
 }
 
-function resolvePracticeQuestions(_specialty: string, deckSlug: string): PracticeQuestion[] {
-  return PRACTICE_CONTENT_BY_DECK[deckSlug] ?? DEMO_PRACTICE_QUESTIONS;
+function resolvePracticeQuestions(_specialty: string, _deckSlug: string): PracticeQuestion[] {
+  return [];
 }
 
 export function getFlashcardDeck(
@@ -217,7 +148,11 @@ export function mergeStudyGuideNavChildren(
 export function buildSpecialtyDropdownLinks(
   audioHref?: string,
   studyGuideChildren?: { label: string; slug: string }[],
-  options?: { studyGuidesReady?: boolean },
+  options?: {
+    studyGuidesReady?: boolean;
+    flashcardChildren?: { label: string; slug: string }[];
+    practiceChildren?: { label: string; slug: string }[];
+  },
 ): ResourceDropdownLink[] {
   const studyChildren =
     studyGuideChildren && studyGuideChildren.length > 0
@@ -226,6 +161,16 @@ export function buildSpecialtyDropdownLinks(
         ? []
         : [{ label: "Outlines", slug: "outlines" }];
 
+  const flashcardChildren =
+    options?.flashcardChildren && options.flashcardChildren.length > 0
+      ? options.flashcardChildren
+      : FLASHCARD_NAV_CHILDREN;
+
+  const practiceChildren =
+    options?.practiceChildren && options.practiceChildren.length > 0
+      ? options.practiceChildren
+      : PRACTICE_NAV_CHILDREN;
+
   return [
     {
       label: "Study Guides",
@@ -233,11 +178,11 @@ export function buildSpecialtyDropdownLinks(
       children: studyChildren,
     },
     { label: "Audio", slug: "audio", ...(audioHref ? { href: audioHref } : {}) },
-    { label: "Flashcards", slug: "flashcards", children: FLASHCARD_NAV_CHILDREN },
+    { label: "Flashcards", slug: "flashcards", children: flashcardChildren },
     {
       label: "Practice Questions",
       slug: "practice-questions",
-      children: PRACTICE_NAV_CHILDREN,
+      children: practiceChildren,
     },
   ];
 }

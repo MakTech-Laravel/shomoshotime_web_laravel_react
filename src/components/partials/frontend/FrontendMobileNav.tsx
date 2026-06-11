@@ -3,6 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { ChevronDown, User, X } from "lucide-react";
 
 import { useAuth } from "@/auth/useAuth";
+import { useLearningNav } from "@/features/learning/LearningNavContext";
 import { useStudyGuideNav } from "@/features/studyGuides/StudyGuideNavContext";
 import {
   buildSpecialtyDropdownLinks,
@@ -77,6 +78,7 @@ function isNavSectionActive(pathname: string, basePath: string) {
 
 function useMobileNavItems(): MobileNavItem[] {
   const { getNavChildren, isReady } = useStudyGuideNav();
+  const { getFlashcardNavChildren, getPracticeNavChildren } = useLearningNav();
 
   return MOBILE_NAV_ITEM_DEFS.map((item) => {
     if (item.children) {
@@ -93,7 +95,11 @@ function useMobileNavItems(): MobileNavItem[] {
       children: buildSpecialtyDropdownLinks(
         item.audioHref,
         getNavChildren(item.specialty),
-        { studyGuidesReady: isReady },
+        {
+          studyGuidesReady: isReady,
+          flashcardChildren: getFlashcardNavChildren(item.specialty),
+          practiceChildren: getPracticeNavChildren(item.specialty),
+        },
       ),
     };
   });
