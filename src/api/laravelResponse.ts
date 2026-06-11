@@ -1,4 +1,4 @@
-import { type AuthUser } from '@/auth/types'
+﻿import { type AuthUser } from '@/auth/types'
 
 function isTruthyFlag(value: unknown): boolean {
   return value === true || value === 1 || value === '1' || value === 'true'
@@ -9,7 +9,6 @@ function avatarFromRecord(o: Record<string, unknown>): string | undefined {
   return typeof image === 'string' && image.length > 0 ? image : undefined
 }
 
-/** Map Laravel login/profile payloads (UserResource or auth `data` blob) to AuthUser. */
 export function mapApiUserRecord(raw: Record<string, unknown>): AuthUser {
   const isAdmin = isTruthyFlag(raw.is_admin)
   const id = raw.id ?? raw.user_id ?? raw.email
@@ -62,7 +61,6 @@ function permissionNamesFromRaw(raw: unknown): string[] {
   return out
 }
 
-/** Map AdminResource / admin login payload into AuthUser with route role `admin` + Spatie fields. */
 export function normalizeAdminAuthUser(raw: Record<string, unknown>): AuthUser {
   const spatieRoles = Array.isArray(raw.roles) ? permissionNamesFromRaw(raw.roles) : []
   const perms = permissionNamesFromRaw(raw.permissions)
@@ -93,7 +91,6 @@ function rolesLookLikeSpatieAdmin(raw: unknown): boolean {
 
 function isAdminResourceShape(o: Record<string, unknown>): boolean {
   if (typeof o.email !== 'string') return false
-  // UserResource (user/vendor) always includes `role` and never sends Spatie `permissions`.
   const routeRole = o.role
   if (routeRole === 'user' || routeRole === 'vendor') return false
   if (rolesLookLikeSpatieAdmin(o.roles)) return true
@@ -102,10 +99,13 @@ function isAdminResourceShape(o: Record<string, unknown>): boolean {
   return false
 }
 
-/**
- * Typical Laravel `sendResponse($success, $message, $payload)` JSON:
- * `{ success?: boolean, message?: string, data?: T }`
- */
+export type LaravelPaginationMeta = {
+  current_page: number
+  last_page: number
+  per_page: number
+  total: number
+}
+
 export function unwrapLaravelData<T = unknown>(body: unknown): T | null {
   if (body === null || body === undefined) return null
   if (typeof body !== 'object') return null
@@ -114,6 +114,36 @@ export function unwrapLaravelData<T = unknown>(body: unknown): T | null {
     return o.data as T
   }
   return body as T
+}
+
+export function unwrapLaravelPaginatedData<T = unknown>(
+  body: unknown,
+): { rows: T[]; meta: LaravelPaginationMeta | null } {
+  if (!body || typeof body !== 'object') {
+    return { rows: [], meta: null }
+  }
+  const o = body as Record<string, unknown>
+  const rows = Array.isArray(o.data) ? (o.data as T[]) : []
+  const metaRaw = o.meta
+  if (!metaRaw || typeof metaRaw !== 'object') {
+    return { rows, meta: null }
+  }
+  const m = metaRaw as Record<string, unknown>
+  return {
+    rows,
+    meta: {
+      current_page: Number(m.current_page ?? 1),
+      last_page: Number(m.last_page ?? 1),
+      per_page: Number(m.per_page ?? rows.length),
+      total: Number(m.total ?? rows.length),
+    },
+  }
+}
+
+export function isLaravelSuccess(body: unknown): boolean {
+  if (!body || typeof body !== 'object') return false
+  const o = body as Record<string, unknown>
+  return o.success === true
 }
 
 function unwrapLaravelDataDeep(body: unknown): unknown {
@@ -127,7 +157,6 @@ function unwrapLaravelDataDeep(body: unknown): unknown {
   return cur
 }
 
-/** Passport / your login payload: `token` or `access_token` at root or under `data`. */
 export function extractBearerTokenFromLoginBody(body: unknown): string | null {
   if (body === null || body === undefined) return null
   if (typeof body !== 'object') return null
@@ -149,7 +178,6 @@ export function extractBearerTokenFromLoginBody(body: unknown): string | null {
   return null
 }
 
-/** OAuth / Passport: `refresh_token` at root or under `data`. */
 export function extractRefreshTokenFromLoginBody(body: unknown): string | null {
   if (body === null || body === undefined) return null
   if (typeof body !== 'object') return null
@@ -165,13 +193,11 @@ export function extractRefreshTokenFromLoginBody(body: unknown): string | null {
   return null
 }
 
-/** Map Laravel `UserResource` / user object from login or `/me`. */
 export function extractUserFromAuthPayload(body: unknown): AuthUser | null {
   const data = unwrapLaravelDataDeep(body)
   if (!data || typeof data !== 'object') return null
   const o = data as Record<string, unknown>
 
-  // Common: { data: { user: {...} } }
   if ('user' in o && o.user && typeof o.user === 'object') {
     const u = o.user as Record<string, unknown>
     if ('id' in u || 'email' in u) {
@@ -180,13 +206,11 @@ export function extractUserFromAuthPayload(body: unknown): AuthUser | null {
     }
   }
 
-  // Admin login often returns: { data: { admin: {...} } }
   if ('admin' in o && o.admin && typeof o.admin === 'object') {
     const a = o.admin as Record<string, unknown>
     if ('id' in a || 'email' in a) return normalizeAdminAuthUser(a)
   }
 
-  // Sometimes: { data: {...user fields...} } or login payload with user_id
   if ('id' in o || 'user_id' in o || 'email' in o) {
     return mapApiUserRecord(o)
   }

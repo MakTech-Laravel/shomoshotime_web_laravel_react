@@ -36,6 +36,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import { useAuth } from "@/auth/useAuth";
+import { saveStudyGuidePageProgress } from "@/features/studyGuides/studyGuideProgressApi";
 import { loadPdfBytes } from "@/lib/loadPdfBytes";
 import { isPdfDocumentCached, loadPdfDocument, type PdfLoadSources } from "@/lib/loadPdfDocument";
 import { searchPdfText } from "@/lib/pdfTextSearch";
@@ -47,6 +49,7 @@ type PdfStudyViewerProps = {
   pdfSources: PdfLoadSources;
   fileName: string;
   className?: string;
+  contentId?: number;
 };
 
 const TOOLS: { id: ToolId; label: string; Icon: typeof MousePointer2 }[] = [
@@ -74,11 +77,15 @@ function getRenderDpr() {
   return Math.min(window.devicePixelRatio || 1, MAX_RENDER_DPR);
 }
 
-export function PdfStudyViewer({ pdfSources, fileName, className }: PdfStudyViewerProps) {
+const PROGRESS_DEBOUNCE_MS = 800;
+
+export function PdfStudyViewer({ pdfSources, fileName, className, contentId }: PdfStudyViewerProps) {
+  const { isAuthenticated } = useAuth();
   const viewportRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const scrollSyncLock = useRef(false);
+  const progressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [pdfDoc, setPdfDoc] = useState<PDFDocumentProxy | null>(null);
   const [pageNumber, setPageNumber] = useState(1);
@@ -101,6 +108,24 @@ export function PdfStudyViewer({ pdfSources, fileName, className }: PdfStudyView
 
   const renderWidth = Math.round(pageWidth * scale);
   const activeMatch = searchMatches[matchIndex] ?? null;
+
+  useEffect(() => {
+    if (!contentId || !isAuthenticated) return;
+
+    if (progressTimerRef.current) {
+      clearTimeout(progressTimerRef.current);
+    }
+
+    progressTimerRef.current = setTimeout(() => {
+      void saveStudyGuidePageProgress(contentId, pageNumber).catch(() => {});
+    }, PROGRESS_DEBOUNCE_MS);
+
+    return () => {
+      if (progressTimerRef.current) {
+        clearTimeout(progressTimerRef.current);
+      }
+    };
+  }, [contentId, pageNumber, isAuthenticated]);
 
   const scrollToPage = useCallback((target: number, behavior: ScrollBehavior = "smooth") => {
     const root = scrollRef.current;

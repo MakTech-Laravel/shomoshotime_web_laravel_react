@@ -1,7 +1,8 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { Check } from "lucide-react";
 
+import { useSubscriptionPlans } from "@/features/subscriptions/useSubscriptions";
 import { container } from "@/lib/container";
 import { cn } from "@/lib/utils";
 
@@ -73,7 +74,27 @@ function PriceDisplay({
   );
 }
 
+function matchApiPlanName(apiDuration: string, planName: string): boolean {
+  const d = apiDuration.toLowerCase();
+  const n = planName.toLowerCase();
+  return d.includes(n) || n.includes(d);
+}
+
 export default function PricingPlans() {
+  const { data: apiPlans = [] } = useSubscriptionPlans();
+
+  const displayPlans = useMemo(() => {
+    if (apiPlans.length === 0) return PLANS;
+    return PLANS.map((plan) => {
+      const match = apiPlans.find((p) => matchApiPlanName(p.duration, plan.name));
+      if (!match) return plan;
+      return {
+        ...plan,
+        amount: String(Math.round(match.price)),
+      };
+    });
+  }, [apiPlans]);
+
   useEffect(() => {
     document.title = "Plans & Pricing | Sonographer Pal";
   }, []);
@@ -90,7 +111,7 @@ export default function PricingPlans() {
           </p>
 
           <ul className="mx-auto mt-10 grid max-w-6xl list-none grid-cols-1 gap-5 p-0 sm:mt-12 sm:grid-cols-2 lg:mt-14 lg:grid-cols-3 lg:gap-6">
-            {PLANS.map((plan) => {
+            {displayPlans.map((plan) => {
               const isFeatured = plan.variant === "featured";
 
               return (

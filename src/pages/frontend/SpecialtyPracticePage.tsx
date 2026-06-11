@@ -1,14 +1,22 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { Navigate, useParams } from "react-router-dom";
 import { PracticeQuiz } from "@/components/practice/PracticeQuiz";
-import { DEFAULT_DECK_SLUG, getPracticeDeck } from "@/data/specialtyResources";
+import { DEFAULT_DECK_SLUG, getPracticeDeck, type SpecialtySlug } from "@/data/specialtyResources";
 import { isValidSpecialty } from "@/data/studyGuideContent";
+import { submitPracticeAnswer } from "@/features/practice/practiceApi";
+import { usePracticeForDeck } from "@/features/practice/usePractice";
 import { container } from "@/lib/container";
 import { cn } from "@/lib/utils";
 
 export default function SpecialtyPracticePage() {
   const { specialty, deck: deckSlug } = useParams<{ specialty: string; deck?: string }>();
   const deck = getPracticeDeck(specialty, deckSlug);
+  const { questions: apiQuestions } = usePracticeForDeck(specialty as SpecialtySlug, deckSlug);
+
+  const questions = useMemo(() => {
+    if (apiQuestions.length > 0) return apiQuestions;
+    return deck?.questions ?? [];
+  }, [apiQuestions, deck?.questions]);
 
   useEffect(() => {
     if (deck) {
@@ -37,7 +45,8 @@ export default function SpecialtyPracticePage() {
 
         <PracticeQuiz
           key={`${specialty}-${deck.slug}`}
-          questions={deck.questions}
+          questions={questions}
+          onSubmitAnswer={submitPracticeAnswer}
           className="w-full"
         />
       </div>

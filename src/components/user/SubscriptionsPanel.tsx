@@ -1,10 +1,14 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { ChevronDown } from "lucide-react";
 
+import {
+  useCancelSubscription,
+  useSubscriptionCheck,
+  useSubscriptionPlans,
+} from "@/features/subscriptions/useSubscriptions";
 import { cn } from "@/lib/utils";
 
-/** Demo subscription — wire to API when backend is ready. */
-const DEMO_SUBSCRIPTION = {
+const FALLBACK_SUBSCRIPTION = {
   planName: "Annual",
   statusLabel: "Valid until canceled",
   status: "Active" as const,
@@ -15,6 +19,23 @@ const DEMO_SUBSCRIPTION = {
 
 export function SubscriptionsPanel() {
   const [expanded, setExpanded] = useState(false);
+  const { data: isPremium } = useSubscriptionCheck();
+  const { data: plans = [] } = useSubscriptionPlans();
+  const cancelMutation = useCancelSubscription();
+
+  const subscription = useMemo(() => {
+    if (!isPremium) return FALLBACK_SUBSCRIPTION;
+    const plan = plans[0];
+    if (!plan) return FALLBACK_SUBSCRIPTION;
+    return {
+      planName: plan.duration,
+      statusLabel: "Valid until canceled",
+      status: "Active" as const,
+      price: `$${plan.price.toFixed(2)} per ${plan.duration.toLowerCase()}`,
+      paymentMethod: "Online payment",
+      startDate: FALLBACK_SUBSCRIPTION.startDate,
+    };
+  }, [isPremium, plans]);
 
   return (
     <section className="mt-8 sm:mt-9">
@@ -34,11 +55,11 @@ export function SubscriptionsPanel() {
                 expanded ? "font-semibold" : "font-normal",
               )}
             >
-              {DEMO_SUBSCRIPTION.planName}
+              {subscription.planName}
             </p>
 
             <p className="font-montserrat text-[15px] font-normal text-[#757575] sm:w-1/3 sm:text-center sm:text-base">
-              {DEMO_SUBSCRIPTION.statusLabel}
+              {subscription.statusLabel}
             </p>
 
             <div className="flex sm:w-1/3 sm:justify-end">
@@ -50,7 +71,7 @@ export function SubscriptionsPanel() {
                 className="inline-flex items-center gap-2 rounded-sm transition-opacity hover:opacity-80"
               >
                 <span className="inline-flex rounded bg-[#e8f5e9] px-2.5 py-0.5 font-montserrat text-[14px] font-semibold leading-snug text-[#2e7d32]">
-                  {DEMO_SUBSCRIPTION.status}
+                  {subscription.status}
                 </span>
                 <ChevronDown
                   className={cn(
@@ -70,18 +91,22 @@ export function SubscriptionsPanel() {
               className="grid grid-cols-1 gap-4 pb-5 sm:grid-cols-3 sm:gap-0"
             >
               <div className="space-y-1.5 font-montserrat text-[15px] font-normal text-[#757575] sm:text-base">
-                <p>{DEMO_SUBSCRIPTION.price}</p>
-                <p>{DEMO_SUBSCRIPTION.paymentMethod}</p>
+                <p>{subscription.price}</p>
+                <p>{subscription.paymentMethod}</p>
                 <button
                   type="button"
-                  className="mt-4 block font-montserrat text-[15px] font-normal text-black underline underline-offset-2 transition hover:text-[#333]"
+                  disabled={!isPremium || cancelMutation.isPending}
+                  onClick={() => {
+                    void cancelMutation.mutateAsync().catch(() => {});
+                  }}
+                  className="mt-4 block font-montserrat text-[15px] font-normal text-black underline underline-offset-2 transition hover:text-[#333] disabled:opacity-50"
                 >
                   Cancel Subscription
                 </button>
               </div>
 
               <p className="font-montserrat text-[15px] font-normal text-[#757575] sm:text-center sm:text-base">
-                Start date: {DEMO_SUBSCRIPTION.startDate}
+                Start date: {subscription.startDate}
               </p>
 
               <div className="hidden sm:block" aria-hidden />

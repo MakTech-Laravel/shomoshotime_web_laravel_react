@@ -1,27 +1,48 @@
 import { useState } from "react";
 import { Check, X } from "lucide-react";
 import { ResourceContentCard } from "@/components/ui/ResourceContentCard";
+import { indexToAnswerKey } from "@/features/practice/mapQuestion";
 import { cn } from "@/lib/utils";
 
 export const PRACTICE_COMING_SOON_MESSAGE =
   "Practice questions for this topic are coming soon.";
 
 export type PracticeQuestion = {
+  id?: number;
+  questionSetId?: number;
   prompt: string;
   options: string[];
   correctIndex: number;
   feedbackCorrect?: string;
 };
 
+type SubmitAnswerHandler = (
+  questionSetId: number,
+  questionId: number,
+  answer: string,
+) => Promise<{ is_correct: boolean; correct_answer: string }>;
+
 type PracticeQuizProps = {
   questions: PracticeQuestion[];
   className?: string;
+  onSubmitAnswer?: SubmitAnswerHandler;
 };
 
-export function PracticeQuiz({ questions, className }: PracticeQuizProps) {
+const ANSWER_KEY_INDEX: Record<string, number> = {
+  option_a: 0,
+  option_b: 1,
+  option_c: 2,
+  option_d: 3,
+};
+
+export function PracticeQuiz({ questions, className, onSubmitAnswer }: PracticeQuizProps) {
   const [idx, setIdx] = useState(0);
   const [picked, setPicked] = useState<number | null>(null);
   const [submitted, setSubmitted] = useState(false);
+  const [answerResult, setAnswerResult] = useState<{
+    isCorrect: boolean;
+    correctLabel: string;
+  } | null>(null);
 
   const item = questions[idx];
   const total = questions.length;
@@ -36,11 +57,40 @@ export function PracticeQuiz({ questions, className }: PracticeQuizProps) {
     );
   }
 
-  const isCorrect = picked === item.correctIndex;
-  const correctLabel = item.options[item.correctIndex];
+  const isCorrect = submitted
+    ? (answerResult?.isCorrect ?? picked === item.correctIndex)
+    : picked === item.correctIndex;
+  const correctLabel = submitted
+    ? (answerResult?.correctLabel ?? item.options[item.correctIndex])
+    : item.options[item.correctIndex];
 
-  function submit() {
+  async function submit() {
     if (picked === null || submitted) return;
+
+    const fallback = {
+      isCorrect: picked === item.correctIndex,
+      correctLabel: item.options[item.correctIndex] ?? "",
+    };
+
+    if (onSubmitAnswer && item.id != null && item.questionSetId != null) {
+      try {
+        const result = await onSubmitAnswer(
+          item.questionSetId,
+          item.id,
+          indexToAnswerKey(picked),
+        );
+        const correctIdx = ANSWER_KEY_INDEX[result.correct_answer] ?? item.correctIndex;
+        setAnswerResult({
+          isCorrect: result.is_correct,
+          correctLabel: item.options[correctIdx] ?? fallback.correctLabel,
+        });
+      } catch {
+        setAnswerResult(fallback);
+      }
+    } else {
+      setAnswerResult(fallback);
+    }
+
     setSubmitted(true);
   }
 
@@ -48,6 +98,7 @@ export function PracticeQuiz({ questions, className }: PracticeQuizProps) {
     setIdx(next);
     setPicked(null);
     setSubmitted(false);
+    setAnswerResult(null);
   }
 
   return (
@@ -99,7 +150,7 @@ export function PracticeQuiz({ questions, className }: PracticeQuizProps) {
       <div className="mt-10 flex justify-center">
         <button
           type="button"
-          onClick={submit}
+          onClick={() => void submit()}
           disabled={picked === null || submitted}
           className={cn(
             "rounded-lg border-2 border-[#b8860b] bg-white px-8 py-2.5 font-sans text-sm font-medium transition-colors sm:text-base",

@@ -1,14 +1,39 @@
-import { useEffect } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import { Navigate, useParams } from "react-router-dom";
 import { FlashcardDeck } from "@/components/flashcards/FlashcardDeck";
-import { DEFAULT_DECK_SLUG, getFlashcardDeck } from "@/data/specialtyResources";
+import { DEFAULT_DECK_SLUG, getFlashcardDeck, type SpecialtySlug } from "@/data/specialtyResources";
 import { isValidSpecialty } from "@/data/studyGuideContent";
+import { recordFlashcardProgress } from "@/features/flashcards/flashcardsApi";
+import { useFlashcardsForDeck } from "@/features/flashcards/useFlashcards";
 import { container } from "@/lib/container";
 import { cn } from "@/lib/utils";
 
 export default function SpecialtyFlashcardsPage() {
   const { specialty, deck: deckSlug } = useParams<{ specialty: string; deck?: string }>();
   const deck = getFlashcardDeck(specialty, deckSlug);
+  const { cards: apiCards, contentId } = useFlashcardsForDeck(
+    specialty as SpecialtySlug,
+    deckSlug,
+  );
+
+  const cards = useMemo(() => {
+    if (apiCards.length > 0) {
+      return apiCards.map((c) => ({
+        id: c.id,
+        question: c.question,
+        answer: c.answer,
+      }));
+    }
+    return deck?.cards ?? [];
+  }, [apiCards, deck?.cards]);
+
+  const handleCardProgress = useCallback(
+    (cardId: number) => {
+      if (!contentId) return;
+      void recordFlashcardProgress(contentId, cardId).catch(() => {});
+    },
+    [contentId],
+  );
 
   useEffect(() => {
     if (deck) {
@@ -35,7 +60,12 @@ export default function SpecialtyFlashcardsPage() {
           {deck.title}
         </h1>
 
-        <FlashcardDeck key={`${specialty}-${deck.slug}`} cards={deck.cards} className="w-full" />
+        <FlashcardDeck
+          key={`${specialty}-${deck.slug}`}
+          cards={cards}
+          onCardProgress={handleCardProgress}
+          className="w-full"
+        />
       </div>
     </div>
   );

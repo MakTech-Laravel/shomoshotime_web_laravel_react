@@ -1,3 +1,4 @@
+import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import {
   Activity,
@@ -12,6 +13,7 @@ import type { LucideIcon } from "lucide-react";
 
 import { useAuth } from "@/auth/useAuth";
 import { Button } from "@/components/ui/button";
+import { fetchAdminDashboardStats } from "@/features/admin/adminApi";
 import { container } from "@/lib/container";
 import { cn } from "@/lib/utils";
 
@@ -21,13 +23,6 @@ type StatCard = {
   hint: string;
   Icon: LucideIcon;
 };
-
-const STATS: StatCard[] = [
-  { label: "Total students", value: "0", hint: "Active members", Icon: Users },
-  { label: "Study materials", value: "0", hint: "Across 4 specialties", Icon: BookOpen },
-  { label: "Active subscriptions", value: "0", hint: "Paid plans", Icon: CreditCard },
-  { label: "Practice attempts", value: "0", hint: "Last 30 days", Icon: Activity },
-];
 
 function StatTile({ stat }: { stat: StatCard }) {
   const { Icon, label, value, hint } = stat;
@@ -48,6 +43,17 @@ function StatTile({ stat }: { stat: StatCard }) {
 export default function AdminDashboard() {
   const { user, logout } = useAuth();
   const displayName = user?.name ?? user?.email ?? "Admin";
+  const { data: stats } = useQuery({
+    queryKey: ["admin-dashboard-stats"],
+    queryFn: fetchAdminDashboardStats,
+  });
+
+  const STATS: StatCard[] = [
+    { label: "Total students", value: String(stats?.totalStudents ?? 0), hint: "Active members", Icon: Users },
+    { label: "Study materials", value: String(stats?.studyMaterials ?? 0), hint: "Across 4 specialties", Icon: BookOpen },
+    { label: "Active subscriptions", value: String(stats?.activeSubscriptions ?? 0), hint: "Paid plans", Icon: CreditCard },
+    { label: "Practice attempts", value: String(stats?.practiceAttempts ?? 0), hint: "Last 30 days", Icon: Activity },
+  ];
 
   return (
     <div className="min-h-dvh bg-surface-soft">
