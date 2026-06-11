@@ -3,6 +3,7 @@ import { useLocation } from "react-router-dom";
 
 import { AccountPlaceholderPanel } from "@/components/user/AccountPlaceholderPanel";
 import { AccountSettingsPanel } from "@/components/user/AccountSettingsPanel";
+import { OrdersPanel } from "@/components/user/OrdersPanel";
 import { SubscriptionsPanel } from "@/components/user/SubscriptionsPanel";
 import { UserAccountLayout } from "@/components/user/UserAccountLayout";
 import { parseUserAccountViewFromPath } from "@/lib/userAccountNav";
@@ -46,6 +47,8 @@ export default function UserAccountPage() {
     <UserAccountLayout>
       {view === "subscriptions" ? (
         <SubscriptionsPanel />
+      ) : view === "orders" ? (
+        <OrdersPanel />
       ) : view === "account" ? (
         <AccountSettingsPanel />
       ) : (

@@ -7,6 +7,7 @@
   subscriptionStore: "/user/subscription/store",
   subscriptionCancel: "/user/subscription/cancel",
   stripeKeys: "/user/stripe-keys",
+  paymentList: "/user/payment/list",
   paymentStore: "/user/payment/store",
   contentStudyGuides: "/user/content/study-guides",
   contentNextPage: "/user/content/next-page",
