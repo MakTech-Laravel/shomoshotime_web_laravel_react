@@ -1,20 +1,43 @@
-import { useEffect } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import { Navigate, useParams } from "react-router-dom";
 import { FlashcardDeck } from "@/components/flashcards/FlashcardDeck";
-import { DEFAULT_DECK_SLUG, getFlashcardDeck } from "@/data/specialtyResources";
+import { DEFAULT_DECK_SLUG, getFlashcardDeck, type SpecialtySlug } from "@/data/specialtyResources";
 import { isValidSpecialty } from "@/data/studyGuideContent";
+import { recordFlashcardProgress } from "@/features/flashcards/flashcardsApi";
+import { useFlashcardsForDeck } from "@/features/flashcards/useFlashcards";
 import { container } from "@/lib/container";
 import { cn } from "@/lib/utils";
 
 export default function SpecialtyFlashcardsPage() {
   const { specialty, deck: deckSlug } = useParams<{ specialty: string; deck?: string }>();
   const deck = getFlashcardDeck(specialty, deckSlug);
+  const { cards: apiCards, contentId, content } = useFlashcardsForDeck(
+    specialty as SpecialtySlug,
+    deckSlug,
+  );
+  const pageTitle = deck?.title ?? content?.title ?? "Flashcards";
+
+  const cards = useMemo(
+    () =>
+      apiCards.map((c) => ({
+        id: c.id,
+        question: c.question,
+        answer: c.answer,
+      })),
+    [apiCards],
+  );
+
+  const handleCardProgress = useCallback(
+    (cardId: number) => {
+      if (!contentId) return;
+      void recordFlashcardProgress(contentId, cardId).catch(() => {});
+    },
+    [contentId],
+  );
 
   useEffect(() => {
-    if (deck) {
-      document.title = `${deck.title} | Sonographer Pal`;
-    }
-  }, [deck]);
+    document.title = `${pageTitle} | Sonographer Pal`;
+  }, [pageTitle]);
 
   if (!specialty || !isValidSpecialty(specialty)) {
     return <Navigate to="/" replace />;
@@ -24,7 +47,7 @@ export default function SpecialtyFlashcardsPage() {
     return <Navigate to={`/${specialty}/flashcards/${DEFAULT_DECK_SLUG}`} replace />;
   }
 
-  if (!deck) {
+  if (!deck && contentId == null) {
     return <Navigate to={`/${specialty}/flashcards/${DEFAULT_DECK_SLUG}`} replace />;
   }
 
@@ -32,10 +55,15 @@ export default function SpecialtyFlashcardsPage() {
     <div className="min-h-screen bg-[#fdf5ee]">
       <div className={cn(container, "flex w-full flex-col items-center py-12 lg:py-16")}>
         <h1 className="mb-6 px-2 text-center font-heading text-2xl font-bold text-pretty text-black break-words sm:text-3xl lg:text-[36px]">
-          {deck.title}
+          {pageTitle}
         </h1>
 
-        <FlashcardDeck key={`${specialty}-${deck.slug}`} cards={deck.cards} className="w-full" />
+        <FlashcardDeck
+          key={`${specialty}-${deckSlug}`}
+          cards={cards}
+          onCardProgress={handleCardProgress}
+          className="w-full"
+        />
       </div>
     </div>
   );

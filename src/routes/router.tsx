@@ -2,6 +2,7 @@ import { lazy } from "react";
 import { Navigate, createBrowserRouter } from "react-router-dom";
 
 import { authRoutes } from "@/routes/authRoutes";
+import { ProtectedRoute } from "@/routes/ProtectedRoute";
 import { publicRoutes } from "@/routes/publicRoutes";
 import { ScrollToTopLayout, suspensePage } from "@/routes/routeUtils";
 
@@ -19,7 +20,14 @@ export const router = createBrowserRouter([
       ...authRoutes,
       { path: "/unauthorized", element: suspensePage(Unauthorized) },
       { path: "/admin", element: redirect("/admin/dashboard") },
-      { path: "/admin/dashboard", element: suspensePage(AdminDashboard) },
+      {
+        path: "/admin/dashboard",
+        element: (
+          <ProtectedRoute roles="admin" forceAuth>
+            {suspensePage(AdminDashboard)}
+          </ProtectedRoute>
+        ),
+      },
       { path: "*", element: suspensePage(NotFound) },
     ],
   },

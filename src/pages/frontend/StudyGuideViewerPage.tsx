@@ -115,6 +115,7 @@ export default function StudyGuideViewerPage() {
               key={`${guide.id}-${guide.updated_at ?? guide.file_url}`}
               pdfSources={pdfSources}
               fileName={fileName}
+              contentId={guide.id}
               className="min-h-0 flex-1"
             />
           ) : null}

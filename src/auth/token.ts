@@ -1,5 +1,6 @@
 import { env, type BearerTokenPersistence } from '@/config/env'
 import { type AuthUser } from '@/auth/types'
+import { notifyAuthChanged } from '@/auth/crossTabSync'
 
 const STORAGE_KEY_ACCESS = 'react-vite-laravel.bearer_token'
 const STORAGE_KEY_REFRESH = 'react-vite-laravel.refresh_token'
@@ -14,7 +15,12 @@ function readAccess(mode: BearerTokenPersistence): string | null {
   if (typeof window === 'undefined') return null
   if (mode === 'memory') return memoryAccessToken
   try {
-    if (mode === 'session') return sessionStorage.getItem(STORAGE_KEY_ACCESS)
+    if (mode === 'session') {
+      return (
+        sessionStorage.getItem(STORAGE_KEY_ACCESS) ??
+        localStorage.getItem(STORAGE_KEY_ACCESS)
+      )
+    }
     return localStorage.getItem(STORAGE_KEY_ACCESS)
   } catch {
     return null
@@ -25,16 +31,21 @@ function writeAccess(mode: BearerTokenPersistence, token: string) {
   if (typeof window === 'undefined') return
   if (mode === 'memory') {
     memoryAccessToken = token
+    notifyAuthChanged()
     return
   }
   try {
     if (mode === 'session') {
       sessionStorage.setItem(STORAGE_KEY_ACCESS, token)
+      localStorage.setItem(STORAGE_KEY_ACCESS, token)
+      notifyAuthChanged()
       return
     }
     localStorage.setItem(STORAGE_KEY_ACCESS, token)
+    notifyAuthChanged()
   } catch {
     memoryAccessToken = token
+    notifyAuthChanged()
   }
 }
 
@@ -42,7 +53,12 @@ function readRefresh(mode: BearerTokenPersistence): string | null {
   if (typeof window === 'undefined') return null
   if (mode === 'memory') return memoryRefreshToken
   try {
-    if (mode === 'session') return sessionStorage.getItem(STORAGE_KEY_REFRESH)
+    if (mode === 'session') {
+      return (
+        sessionStorage.getItem(STORAGE_KEY_REFRESH) ??
+        localStorage.getItem(STORAGE_KEY_REFRESH)
+      )
+    }
     return localStorage.getItem(STORAGE_KEY_REFRESH)
   } catch {
     return null
@@ -58,6 +74,7 @@ function writeRefresh(mode: BearerTokenPersistence, token: string) {
   try {
     if (mode === 'session') {
       sessionStorage.setItem(STORAGE_KEY_REFRESH, token)
+      localStorage.setItem(STORAGE_KEY_REFRESH, token)
       return
     }
     localStorage.setItem(STORAGE_KEY_REFRESH, token)
@@ -72,7 +89,8 @@ function readUser(mode: BearerTokenPersistence): AuthUser | null {
   try {
     const raw =
       mode === 'session'
-        ? sessionStorage.getItem(STORAGE_KEY_USER)
+        ? (sessionStorage.getItem(STORAGE_KEY_USER) ??
+          localStorage.getItem(STORAGE_KEY_USER))
         : localStorage.getItem(STORAGE_KEY_USER)
     if (!raw) return null
     return JSON.parse(raw) as AuthUser
@@ -85,6 +103,7 @@ function writeUser(mode: BearerTokenPersistence, user: AuthUser | null) {
   if (typeof window === 'undefined') return
   if (mode === 'memory') {
     memoryAuthUser = user
+    notifyAuthChanged()
     return
   }
   try {
@@ -92,19 +111,26 @@ function writeUser(mode: BearerTokenPersistence, user: AuthUser | null) {
       const raw = JSON.stringify(user)
       if (mode === 'session') {
         sessionStorage.setItem(STORAGE_KEY_USER, raw)
+        localStorage.setItem(STORAGE_KEY_USER, raw)
+        notifyAuthChanged()
         return
       }
       localStorage.setItem(STORAGE_KEY_USER, raw)
+      notifyAuthChanged()
       return
     }
 
     if (mode === 'session') {
       sessionStorage.removeItem(STORAGE_KEY_USER)
+      localStorage.removeItem(STORAGE_KEY_USER)
+      notifyAuthChanged()
       return
     }
     localStorage.removeItem(STORAGE_KEY_USER)
+    notifyAuthChanged()
   } catch {
     memoryAuthUser = user
+    notifyAuthChanged()
   }
 }
 
@@ -120,6 +146,27 @@ function clearAllAuthStorage() {
     localStorage.removeItem(STORAGE_KEY_REFRESH)
     sessionStorage.removeItem(STORAGE_KEY_USER)
     localStorage.removeItem(STORAGE_KEY_USER)
+    notifyAuthChanged()
+  } catch {
+    // ignore
+  }
+}
+
+/** When using session storage, mirror existing auth into localStorage for other tabs. */
+export function ensureCrossTabAuthMirror() {
+  if (env.authStrategy === 'http_only_cookie') return
+  if (env.bearerTokenPersistence !== 'session') return
+  if (typeof window === 'undefined') return
+
+  try {
+    const token = sessionStorage.getItem(STORAGE_KEY_ACCESS)
+    if (token) localStorage.setItem(STORAGE_KEY_ACCESS, token)
+
+    const refresh = sessionStorage.getItem(STORAGE_KEY_REFRESH)
+    if (refresh) localStorage.setItem(STORAGE_KEY_REFRESH, refresh)
+
+    const user = sessionStorage.getItem(STORAGE_KEY_USER)
+    if (user) localStorage.setItem(STORAGE_KEY_USER, user)
   } catch {
     // ignore
   }

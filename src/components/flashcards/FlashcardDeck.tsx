@@ -5,6 +5,7 @@ export const FLASHCARDS_COMING_SOON_MESSAGE =
   "Flashcards for this topic are coming soon.";
 
 export type FlashcardItem = {
+  id?: number;
   question: string;
   answer: string;
 };
@@ -12,9 +13,10 @@ export type FlashcardItem = {
 type FlashcardDeckProps = {
   cards: FlashcardItem[];
   className?: string;
+  onCardProgress?: (cardId: number) => void;
 };
 
-export function FlashcardDeck({ cards, className }: FlashcardDeckProps) {
+export function FlashcardDeck({ cards, className, onCardProgress }: FlashcardDeckProps) {
   const [idx, setIdx] = useState(0);
   const [showAnswer, setShowAnswer] = useState(false);
 
@@ -32,6 +34,9 @@ export function FlashcardDeck({ cards, className }: FlashcardDeckProps) {
   }
 
   function goTo(next: number) {
+    if (next > idx && card.id != null) {
+      onCardProgress?.(card.id);
+    }
     setIdx(next);
     setShowAnswer(false);
   }
@@ -55,7 +60,13 @@ export function FlashcardDeck({ cards, className }: FlashcardDeckProps) {
       <div className="mt-10 flex justify-center">
         <button
           type="button"
-          onClick={() => setShowAnswer((s) => !s)}
+          onClick={() =>
+            setShowAnswer((s) => {
+              const next = !s;
+              if (next && card.id != null) onCardProgress?.(card.id);
+              return next;
+            })
+          }
           className="rounded-lg border-2 border-[#FFC107] bg-white px-8 py-2.5 font-sans text-sm font-medium text-[#b8860b] transition-colors hover:bg-[#FFC107]/10 sm:text-base"
         >
           {showAnswer ? "Hide Answer" : "Show Answer"}{" "}
