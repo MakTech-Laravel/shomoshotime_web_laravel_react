@@ -1,37 +1,78 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import { ChevronDown } from "lucide-react";
 import toast from "react-hot-toast";
+import { useQueryClient } from "@tanstack/react-query";
 
 import { useAuth } from "@/auth/useAuth";
+import { fetchCheckoutSessionStatus } from "@/features/subscriptions/checkoutApi";
 import {
+  subscriptionQueryKeys,
   useCancelSubscription,
   useSubscriptionCheck,
-  useSubscriptionPlans,
 } from "@/features/subscriptions/useSubscriptions";
 import { cn } from "@/lib/utils";
 
 export function SubscriptionsPanel() {
   const [expanded, setExpanded] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const checkoutHandled = useRef(false);
   const { user } = useAuth();
-  const { data: isPremium, isLoading: checkLoading } = useSubscriptionCheck();
-  const { data: plans = [] } = useSubscriptionPlans();
+  const queryClient = useQueryClient();
+  const { data: isPremium, isLoading: checkLoading } = useSubscriptionCheck({
+    enabled: Boolean(user),
+  });
   const cancelMutation = useCancelSubscription();
 
   const active = isPremium === true || user?.is_premium === true;
 
-  const subscription = useMemo(() => {
-    const catalogPlan = plans[0];
-    return {
-      planName: catalogPlan?.duration ?? "Premium",
+  const subscription = useMemo(
+    () => ({
+      planName: "Premium",
       statusLabel: "Valid until canceled",
       status: "Active" as const,
-      price: catalogPlan
-        ? `$${catalogPlan.price.toFixed(2)} per ${catalogPlan.duration.toLowerCase()}`
-        : "—",
+      price: "—",
       paymentMethod: "Subscription",
       startDate: "—",
-    };
-  }, [plans]);
+    }),
+    [],
+  );
+
+  useEffect(() => {
+    if (checkoutHandled.current) return;
+    if (searchParams.get("checkout") !== "success") return;
+
+    const sessionId = searchParams.get("session_id");
+    checkoutHandled.current = true;
+
+    toast.success("Payment received — activating your subscription…");
+
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete("checkout");
+    nextParams.delete("session_id");
+    setSearchParams(nextParams, { replace: true });
+
+    async function confirmCheckout() {
+      if (sessionId) {
+        for (let attempt = 0; attempt < 8; attempt += 1) {
+          try {
+            const status = await fetchCheckoutSessionStatus(sessionId);
+            if (status.fulfilled || status.payment_status === "paid") {
+              break;
+            }
+          } catch {
+            // Webhook may still be processing; retry briefly.
+          }
+          await new Promise((resolve) => setTimeout(resolve, 1500));
+        }
+      }
+
+      await queryClient.invalidateQueries({ queryKey: subscriptionQueryKeys.check });
+      await queryClient.invalidateQueries({ queryKey: subscriptionQueryKeys.publicPlans });
+    }
+
+    void confirmCheckout();
+  }, [queryClient, searchParams, setSearchParams]);
 
   async function handleCancel() {
     try {
@@ -60,9 +101,17 @@ export function SubscriptionsPanel() {
         </div>
       ) : !active ? (
         <div className="mt-7 border-t border-[#e0e0e0]">
-          <p className="py-10 text-center font-montserrat text-[15px] font-normal text-[#9a9a9a]">
-            No items to display yet.
-          </p>
+          <div className="py-10 text-center">
+            <p className="font-montserrat text-[15px] font-normal text-[#9a9a9a]">
+              You don&apos;t have an active subscription yet.
+            </p>
+            <Link
+              to="/pricing-plans"
+              className="mt-6 inline-flex items-center justify-center rounded-md bg-black px-5 py-2.5 font-montserrat text-sm font-semibold text-white transition hover:bg-neutral-900"
+            >
+              View Plans
+            </Link>
+          </div>
         </div>
       ) : (
         <div className="mt-7 border-t border-[#e0e0e0]">

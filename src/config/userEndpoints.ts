@@ -7,6 +7,8 @@
   subscriptionStore: "/user/subscription/store",
   subscriptionCancel: "/user/subscription/cancel",
   stripeKeys: "/user/stripe-keys",
+  stripeCheckoutSession: "/user/stripe/checkout-session",
+  stripeCheckoutStatus: "/user/stripe/checkout-session/status",
   paymentList: "/user/payment/list",
   paymentStore: "/user/payment/store",
   addressList: "/user/address/list",

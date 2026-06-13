@@ -1,10 +1,16 @@
-﻿import { api } from "@/api/client";
+﻿import { isAxiosError } from "axios";
+
+import { api } from "@/api/client";
 import { unwrapLaravelData, unwrapLaravelPaginatedData } from "@/api/laravelResponse";
 import { userEndpoints } from "@/config/userEndpoints";
 import { categoryMatchesSpecialty } from "@/lib/specialtyCategory";
 import type { SpecialtySlug } from "@/data/specialtyResources";
 
 import { normalizeApiQuestion, type ApiPracticeQuestion } from "./mapQuestion";
+
+function emptyListOnNotFound(error: unknown): boolean {
+  return isAxiosError(error) && error.response?.status === 404;
+}
 
 export type QuestionSetSummary = {
   id: number;
@@ -29,23 +35,33 @@ function normalizeSet(raw: unknown): QuestionSetSummary | null {
 export async function fetchPracticeQuestionSets(
   specialty: SpecialtySlug,
 ): Promise<QuestionSetSummary[]> {
-  const res = await api.post(userEndpoints.questionSets, { type: 0, per_page: 50 });
-  const { rows } = unwrapLaravelPaginatedData(res.data);
-  return rows
-    .map(normalizeSet)
-    .filter((r): r is QuestionSetSummary => r !== null)
-    .filter((s) => categoryMatchesSpecialty(s.category, specialty));
+  try {
+    const res = await api.post(userEndpoints.questionSets, { type: 0, per_page: 50 });
+    const { rows } = unwrapLaravelPaginatedData(res.data);
+    return rows
+      .map(normalizeSet)
+      .filter((r): r is QuestionSetSummary => r !== null)
+      .filter((s) => categoryMatchesSpecialty(s.category, specialty));
+  } catch (error) {
+    if (emptyListOnNotFound(error)) return [];
+    throw error;
+  }
 }
 
 export async function fetchQuestionsForSet(
   questionSetId: number,
 ): Promise<ApiPracticeQuestion[]> {
-  const res = await api.post(userEndpoints.questionSetQuestions, {
-    question_set_id: questionSetId,
-    per_page: 200,
-  });
-  const { rows } = unwrapLaravelPaginatedData(res.data);
-  return rows.map(normalizeApiQuestion).filter((r): r is ApiPracticeQuestion => r !== null);
+  try {
+    const res = await api.post(userEndpoints.questionSetQuestions, {
+      question_set_id: questionSetId,
+      per_page: 200,
+    });
+    const { rows } = unwrapLaravelPaginatedData(res.data);
+    return rows.map(normalizeApiQuestion).filter((r): r is ApiPracticeQuestion => r !== null);
+  } catch (error) {
+    if (emptyListOnNotFound(error)) return [];
+    throw error;
+  }
 }
 
 export type SubmitAnswerResult = {

@@ -8,9 +8,10 @@ export type SubscriptionPlan = {
   price: number;
   tag: string | null;
   features: string[] | null;
+  sort_order?: number;
 };
 
-function normalizePlan(raw: unknown): SubscriptionPlan | null {
+export function normalizeSubscriptionPlan(raw: unknown): SubscriptionPlan | null {
   if (!raw || typeof raw !== "object") return null;
   const o = raw as Record<string, unknown>;
   const id = Number(o.id);
@@ -26,19 +27,21 @@ function normalizePlan(raw: unknown): SubscriptionPlan | null {
       features = [o.features];
     }
   }
+  const sortOrder = Number(o.sort_order);
   return {
     id,
     duration: String(o.duration ?? ""),
     price: Number(o.price ?? 0),
-    tag: o.tag != null ? String(o.tag) : null,
+    tag: o.tag != null && String(o.tag).length > 0 ? String(o.tag) : null,
     features,
+    sort_order: Number.isFinite(sortOrder) ? sortOrder : undefined,
   };
 }
 
 export async function fetchSubscriptionPlans(): Promise<SubscriptionPlan[]> {
   const res = await api.post(userEndpoints.subscriptionList, { per_page: 20 });
   const { rows } = unwrapLaravelPaginatedData(res.data);
-  return rows.map(normalizePlan).filter((p): p is SubscriptionPlan => p !== null);
+  return rows.map(normalizeSubscriptionPlan).filter((p): p is SubscriptionPlan => p !== null);
 }
 
 export async function fetchSubscriptionCheck(): Promise<boolean> {

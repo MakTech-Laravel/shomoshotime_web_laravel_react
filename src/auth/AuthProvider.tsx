@@ -3,8 +3,10 @@ import * as React from 'react'
 import { api } from '@/api/client'
 import { AuthContext, type AuthContextValue } from '@/auth/context'
 import { fetchCurrentUser } from '@/auth/session'
+import { subscribeAuthChanged } from '@/auth/crossTabSync'
 import {
   clearAccessToken,
+  ensureCrossTabAuthMirror,
   getAccessToken,
   getStoredAuthUser,
   setAccessToken,
@@ -20,6 +22,7 @@ import { env } from '@/config/env'
 const authPaths = resolveAuthEndpoints()
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  ensureCrossTabAuthMirror()
   const initialToken = React.useMemo(() => getAccessToken(), [])
   const initialUser = React.useMemo(() => {
     if (env.authStrategy !== 'bearer_memory' || !initialToken) return null
@@ -116,6 +119,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     void refreshSession()
   }, [refreshSession])
+
+  // Keep auth state in sync across browser tabs (login/logout in one tab updates others).
+  React.useEffect(() => {
+    if (env.authStrategy !== 'bearer_memory') return
+
+    return subscribeAuthChanged(() => {
+      const token = getAccessToken()
+      setAccessTokenState(token)
+
+      if (!token) {
+        setUser(null)
+        setIsUserLoading(false)
+        return
+      }
+
+      void refreshSession()
+    })
+  }, [refreshSession, setUser])
 
   const setToken = React.useCallback((token: string) => {
     setAccessToken(token)
