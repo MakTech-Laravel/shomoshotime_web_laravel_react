@@ -11,15 +11,17 @@ import { cn } from "@/lib/utils";
 export default function SpecialtyPracticePage() {
   const { specialty, deck: deckSlug } = useParams<{ specialty: string; deck?: string }>();
   const deck = getPracticeDeck(specialty, deckSlug);
-  const { questions: apiQuestions } = usePracticeForDeck(specialty as SpecialtySlug, deckSlug);
+  const { questions: apiQuestions, setId, questionSet } = usePracticeForDeck(
+    specialty as SpecialtySlug,
+    deckSlug,
+  );
+  const pageTitle = deck?.title ?? questionSet?.title ?? "Practice Questions";
 
   const questions = useMemo(() => apiQuestions, [apiQuestions]);
 
   useEffect(() => {
-    if (deck) {
-      document.title = `${deck.title} | Sonographer Pal`;
-    }
-  }, [deck]);
+    document.title = `${pageTitle} | Sonographer Pal`;
+  }, [pageTitle]);
 
   if (!specialty || !isValidSpecialty(specialty)) {
     return <Navigate to="/" replace />;
@@ -29,7 +31,7 @@ export default function SpecialtyPracticePage() {
     return <Navigate to={`/${specialty}/practice-questions/${DEFAULT_DECK_SLUG}`} replace />;
   }
 
-  if (!deck) {
+  if (!deck && setId == null) {
     return <Navigate to={`/${specialty}/practice-questions/${DEFAULT_DECK_SLUG}`} replace />;
   }
 
@@ -37,11 +39,11 @@ export default function SpecialtyPracticePage() {
     <div className="min-h-screen bg-[#fdf5ee]">
       <div className={cn(container, "flex w-full flex-col items-center py-12 lg:py-16")}>
         <h1 className="mb-6 px-2 text-center font-heading text-2xl font-bold text-pretty text-black break-words sm:text-3xl lg:text-[36px]">
-          {deck.title}
+          {pageTitle}
         </h1>
 
         <PracticeQuiz
-          key={`${specialty}-${deck.slug}`}
+          key={`${specialty}-${deckSlug}`}
           questions={questions}
           onSubmitAnswer={submitPracticeAnswer}
           className="w-full"

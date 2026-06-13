@@ -21,12 +21,39 @@ function sortByOrder<T extends DeckSortable>(items: T[]): T[] {
   return [...items].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
 }
 
+function resolveIdFromDynamicSlug<T extends DeckSortable>(
+  items: T[],
+  deckSlug: string,
+): number | undefined {
+  if (deckSlug.startsWith("deck-")) {
+    const suffix = deckSlug.slice(5);
+    if (suffix.startsWith("index-")) {
+      const index = Number(suffix.slice(6));
+      if (Number.isFinite(index) && index >= 0) {
+        return sortByOrder(items)[index]?.id;
+      }
+    }
+    const id = Number(suffix);
+    if (Number.isFinite(id)) {
+      const match = items.find((item) => item.id === id);
+      if (match) return match.id;
+    }
+  }
+  return undefined;
+}
+
 export function resolveIdForDeckSlug<T extends DeckSortable>(
   items: T[],
   deckSlug: string | undefined,
 ): number | undefined {
   const sorted = sortByOrder(items);
   if (sorted.length === 0) return undefined;
+
+  if (deckSlug) {
+    const dynamicId = resolveIdFromDynamicSlug(sorted, deckSlug);
+    if (dynamicId != null) return dynamicId;
+  }
+
   const slug = deckSlug && isDeckSlug(deckSlug) ? deckSlug : DEFAULT_DECK_SLUG;
   const index = DECK_SLUGS.indexOf(slug);
   if (index < 0) return sorted[0]?.id;

@@ -11,10 +11,11 @@ import { cn } from "@/lib/utils";
 export default function SpecialtyFlashcardsPage() {
   const { specialty, deck: deckSlug } = useParams<{ specialty: string; deck?: string }>();
   const deck = getFlashcardDeck(specialty, deckSlug);
-  const { cards: apiCards, contentId } = useFlashcardsForDeck(
+  const { cards: apiCards, contentId, content } = useFlashcardsForDeck(
     specialty as SpecialtySlug,
     deckSlug,
   );
+  const pageTitle = deck?.title ?? content?.title ?? "Flashcards";
 
   const cards = useMemo(
     () =>
@@ -35,10 +36,8 @@ export default function SpecialtyFlashcardsPage() {
   );
 
   useEffect(() => {
-    if (deck) {
-      document.title = `${deck.title} | Sonographer Pal`;
-    }
-  }, [deck]);
+    document.title = `${pageTitle} | Sonographer Pal`;
+  }, [pageTitle]);
 
   if (!specialty || !isValidSpecialty(specialty)) {
     return <Navigate to="/" replace />;
@@ -48,7 +47,7 @@ export default function SpecialtyFlashcardsPage() {
     return <Navigate to={`/${specialty}/flashcards/${DEFAULT_DECK_SLUG}`} replace />;
   }
 
-  if (!deck) {
+  if (!deck && contentId == null) {
     return <Navigate to={`/${specialty}/flashcards/${DEFAULT_DECK_SLUG}`} replace />;
   }
 
@@ -56,11 +55,11 @@ export default function SpecialtyFlashcardsPage() {
     <div className="min-h-screen bg-[#fdf5ee]">
       <div className={cn(container, "flex w-full flex-col items-center py-12 lg:py-16")}>
         <h1 className="mb-6 px-2 text-center font-heading text-2xl font-bold text-pretty text-black break-words sm:text-3xl lg:text-[36px]">
-          {deck.title}
+          {pageTitle}
         </h1>
 
         <FlashcardDeck
-          key={`${specialty}-${deck.slug}`}
+          key={`${specialty}-${deckSlug}`}
           cards={cards}
           onCardProgress={handleCardProgress}
           className="w-full"
