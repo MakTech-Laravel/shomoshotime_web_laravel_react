@@ -1,3 +1,4 @@
+import "@/lib/configurePdfWorker";
 import { useEffect, useMemo } from "react";
 import { Navigate, useParams } from "react-router-dom";
 import { PracticeQuiz } from "@/components/practice/PracticeQuiz";
