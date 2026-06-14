@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { Check, X } from "lucide-react";
+import { QuestionMediaBlock } from "@/components/practice/QuestionMediaBlock";
 import { ResourceContentCard } from "@/components/ui/ResourceContentCard";
+import type { QuestionMedia } from "@/features/practice/questionMedia";
 import { indexToAnswerKey } from "@/features/practice/mapQuestion";
 import { cn } from "@/lib/utils";
 
@@ -14,6 +16,7 @@ export type PracticeQuestion = {
   options: string[];
   correctIndex: number;
   feedbackCorrect?: string;
+  media?: QuestionMedia;
 };
 
 type SubmitAnswerHandler = (
@@ -106,6 +109,8 @@ export function PracticeQuiz({ questions, className, onSubmitAnswer }: PracticeQ
       <p className="text-center font-sans text-base font-bold text-[#b8860b] sm:text-lg">
         Question {idx + 1} of {total}
       </p>
+
+      <QuestionMediaBlock media={item.media} prompt={item.prompt} />
 
       <h2 className="mt-5 text-center font-sans text-lg font-bold leading-snug text-pretty text-black break-words sm:text-xl">
         {item.prompt}

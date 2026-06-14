@@ -84,6 +84,11 @@ function requireAuthFromEnv(): boolean {
   return true
 }
 
+function practiceMediaLightboxFromEnv(): boolean {
+  const raw = (import.meta.env.VITE_PRACTICE_MEDIA_LIGHTBOX as string | undefined)?.toLowerCase()
+  return raw === 'true' || raw === '1' || raw === 'yes'
+}
+
 export const env = {
   mode: import.meta.env.MODE,
   isDev: import.meta.env.DEV,
@@ -129,4 +134,6 @@ export const env = {
   googleClientId: optionalViteString('VITE_GOOGLE_CLIENT_ID'),
   /** Set `VITE_REQUIRE_AUTH=false` to browse all routes without signing in. */
   requireAuth: requireAuthFromEnv(),
+  /** Click-to-expand lightbox for practice question images/PDFs (default off). */
+  practiceMediaLightbox: practiceMediaLightboxFromEnv(),
 }
