@@ -3,8 +3,8 @@ import { Check, X } from "lucide-react";
 import { QuestionMediaBlock } from "@/components/practice/QuestionMediaBlock";
 import {
   getOptionState,
-  optionCardClasses,
   optionRadioClasses,
+  optionRowClasses,
 } from "@/components/practice/practiceOptionState";
 import { ResourceContentCard } from "@/components/ui/ResourceContentCard";
 import type { QuestionMedia } from "@/features/practice/questionMedia";
@@ -134,7 +134,7 @@ export function PracticeQuiz({
         {item.prompt}
       </h2>
 
-      <div className="mx-auto mt-8 max-w-xl space-y-3">
+      <div className="mx-auto mt-8 max-w-xl space-y-4">
         {item.options.map((opt, i) => {
           const state = getOptionState(i, picked, resolvedCorrectIndex, submitted);
 
@@ -142,10 +142,10 @@ export function PracticeQuiz({
             <label
               key={`${idx}-${opt}`}
               className={cn(
-                "flex cursor-pointer items-center justify-between gap-3 rounded-lg border-2 px-4 py-3 transition-colors",
-                optionCardClasses[state],
+                "flex cursor-pointer items-start gap-3 rounded-md py-1 transition-colors",
+                optionRowClasses[state],
                 submitted && "cursor-default",
-                !submitted && state === "default" && "hover:bg-[#fafafa]",
+                !submitted && "hover:bg-[#fafafa]",
               )}
             >
               <input
@@ -160,16 +160,16 @@ export function PracticeQuiz({
                 }}
                 className="sr-only"
               />
-              <span className="flex-1 text-left font-sans text-base font-normal leading-snug text-pretty text-black break-words">
-                {opt}
-              </span>
               <span
                 className={cn(
-                  "size-5 shrink-0 rounded-full border-2",
+                  "mt-1 size-4 shrink-0 rounded-full border-2",
                   optionRadioClasses[state],
                 )}
                 aria-hidden
               />
+              <span className="text-left font-sans text-base font-normal leading-snug text-pretty text-black break-words">
+                {opt}
+              </span>
             </label>
           );
         })}

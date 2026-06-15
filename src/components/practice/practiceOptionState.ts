@@ -31,20 +31,20 @@ export function getOptionState(
   return "disabled";
 }
 
-export const optionCardClasses: Record<OptionState, string> = {
-  default: "border-[#e0e0e0] bg-white",
-  selected: "border-[#b8860b] bg-[#fafafa]",
-  correct: "border-[#2E7D32] bg-[#E8F5E9]",
-  correctReveal: "border-[#2E7D32] bg-[#E8F5E9]",
-  incorrect: "border-[#F06292] bg-[#FFEBEE]",
-  disabled: "border-[#e0e0e0] bg-white",
+export const optionRowClasses: Record<OptionState, string> = {
+  default: "",
+  selected: "bg-[#fafafa]",
+  correct: "bg-[#E8F5E9]",
+  correctReveal: "bg-[#E8F5E9]",
+  incorrect: "bg-[#FFEBEE]",
+  disabled: "",
 };
 
 export const optionRadioClasses: Record<OptionState, string> = {
-  default: "border-[#bdbdbd] bg-white",
+  default: "border-[#e53935] bg-white",
   selected: "border-[#e53935] bg-[#e53935]",
   correct: "border-[#2E7D32] bg-[#2E7D32]",
   correctReveal: "border-[#2E7D32] bg-white",
   incorrect: "border-[#F06292] bg-[#F06292]",
-  disabled: "border-[#bdbdbd] bg-white",
+  disabled: "border-[#e53935] bg-white",
 };
