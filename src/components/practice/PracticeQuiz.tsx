@@ -1,6 +1,11 @@
 import { useState } from "react";
 import { Check, X } from "lucide-react";
 import { QuestionMediaBlock } from "@/components/practice/QuestionMediaBlock";
+import {
+  getOptionState,
+  optionCardClasses,
+  optionRadioClasses,
+} from "@/components/practice/practiceOptionState";
 import { ResourceContentCard } from "@/components/ui/ResourceContentCard";
 import type { QuestionMedia } from "@/features/practice/questionMedia";
 import { indexToAnswerKey } from "@/features/practice/mapQuestion";
@@ -29,6 +34,7 @@ type PracticeQuizProps = {
   questions: PracticeQuestion[];
   className?: string;
   onSubmitAnswer?: SubmitAnswerHandler;
+  showRationale?: boolean;
 };
 
 const ANSWER_KEY_INDEX: Record<string, number> = {
@@ -38,12 +44,18 @@ const ANSWER_KEY_INDEX: Record<string, number> = {
   option_d: 3,
 };
 
-export function PracticeQuiz({ questions, className, onSubmitAnswer }: PracticeQuizProps) {
+export function PracticeQuiz({
+  questions,
+  className,
+  onSubmitAnswer,
+  showRationale = true,
+}: PracticeQuizProps) {
   const [idx, setIdx] = useState(0);
   const [picked, setPicked] = useState<number | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const [answerResult, setAnswerResult] = useState<{
     isCorrect: boolean;
+    correctIndex: number;
     correctLabel: string;
   } | null>(null);
 
@@ -60,19 +72,24 @@ export function PracticeQuiz({ questions, className, onSubmitAnswer }: PracticeQ
     );
   }
 
+  const resolvedCorrectIndex = submitted
+    ? (answerResult?.correctIndex ?? item.correctIndex)
+    : item.correctIndex;
+
   const isCorrect = submitted
-    ? (answerResult?.isCorrect ?? picked === item.correctIndex)
-    : picked === item.correctIndex;
-  const correctLabel = submitted
-    ? (answerResult?.correctLabel ?? item.options[item.correctIndex])
-    : item.options[item.correctIndex];
+    ? (answerResult?.isCorrect ?? picked === resolvedCorrectIndex)
+    : false;
+
+  const rationale = item.feedbackCorrect?.trim() ?? "";
 
   async function submit() {
     if (picked === null || submitted) return;
 
+    const fallbackCorrectIndex = item.correctIndex;
     const fallback = {
-      isCorrect: picked === item.correctIndex,
-      correctLabel: item.options[item.correctIndex] ?? "",
+      isCorrect: picked === fallbackCorrectIndex,
+      correctIndex: fallbackCorrectIndex,
+      correctLabel: item.options[fallbackCorrectIndex] ?? "",
     };
 
     if (onSubmitAnswer && item.id != null && item.questionSetId != null) {
@@ -85,6 +102,7 @@ export function PracticeQuiz({ questions, className, onSubmitAnswer }: PracticeQ
         const correctIdx = ANSWER_KEY_INDEX[result.correct_answer] ?? item.correctIndex;
         setAnswerResult({
           isCorrect: result.is_correct,
+          correctIndex: correctIdx,
           correctLabel: item.options[correctIdx] ?? fallback.correctLabel,
         });
       } catch {
@@ -116,95 +134,113 @@ export function PracticeQuiz({ questions, className, onSubmitAnswer }: PracticeQ
         {item.prompt}
       </h2>
 
-      <div className="mx-auto mt-8 max-w-xl space-y-4">
-        {item.options.map((opt, i) => (
-          <label
-            key={`${idx}-${opt}`}
+      <div className="mx-auto mt-8 max-w-xl space-y-3">
+        {item.options.map((opt, i) => {
+          const state = getOptionState(i, picked, resolvedCorrectIndex, submitted);
+
+          return (
+            <label
+              key={`${idx}-${opt}`}
+              className={cn(
+                "flex cursor-pointer items-center justify-between gap-3 rounded-lg border-2 px-4 py-3 transition-colors",
+                optionCardClasses[state],
+                submitted && "cursor-default",
+                !submitted && state === "default" && "hover:bg-[#fafafa]",
+              )}
+            >
+              <input
+                type="radio"
+                name={`practice-${idx}`}
+                disabled={submitted}
+                checked={picked === i}
+                onChange={() => {
+                  setPicked(i);
+                  setSubmitted(false);
+                  setAnswerResult(null);
+                }}
+                className="sr-only"
+              />
+              <span className="flex-1 text-left font-sans text-base font-normal leading-snug text-pretty text-black break-words">
+                {opt}
+              </span>
+              <span
+                className={cn(
+                  "size-5 shrink-0 rounded-full border-2",
+                  optionRadioClasses[state],
+                )}
+                aria-hidden
+              />
+            </label>
+          );
+        })}
+      </div>
+
+      {!submitted ? (
+        <div className="mt-10 flex justify-center">
+          <button
+            type="button"
+            onClick={() => void submit()}
+            disabled={picked === null}
             className={cn(
-              "flex cursor-pointer items-start gap-3 rounded-md py-1 transition-colors",
-              submitted && "cursor-default",
-              !submitted && "hover:bg-[#fafafa]",
-              picked === i && !submitted && "bg-[#fafafa]",
+              "rounded-lg border-2 border-[#b8860b] bg-white px-8 py-2.5 font-sans text-sm font-medium transition-colors sm:text-base",
+              picked !== null
+                ? "text-[#b8860b] hover:bg-[#FFC107]/10"
+                : "cursor-not-allowed border-[#e5e5e5] text-[#999999]",
             )}
           >
-            <input
-              type="radio"
-              name={`practice-${idx}`}
-              disabled={submitted}
-              checked={picked === i}
-              onChange={() => {
-                setPicked(i);
-                setSubmitted(false);
-              }}
-              className="sr-only"
-            />
-            <span
-              className={cn(
-                "mt-1 size-4 shrink-0 rounded-full border-2 border-[#e53935]",
-                picked === i ? "bg-[#e53935]" : "bg-white",
-              )}
-              aria-hidden
-            />
-            <span className="text-left font-sans text-base font-normal leading-snug text-pretty text-black break-words">
-              {opt}
+            Submit Answer{" "}
+            <span aria-hidden className="font-normal">
+              &gt;
             </span>
-          </label>
-        ))}
-      </div>
-
-      <div className="mt-10 flex justify-center">
-        <button
-          type="button"
-          onClick={() => void submit()}
-          disabled={picked === null || submitted}
-          className={cn(
-            "rounded-lg border-2 border-[#b8860b] bg-white px-8 py-2.5 font-sans text-sm font-medium transition-colors sm:text-base",
-            picked !== null && !submitted
-              ? "text-[#b8860b] hover:bg-[#FFC107]/10"
-              : "cursor-not-allowed border-[#e5e5e5] text-[#999999]",
-          )}
-        >
-          Submit Answer{" "}
-          <span aria-hidden className="font-normal">
-            &gt;
-          </span>
-        </button>
-      </div>
+          </button>
+        </div>
+      ) : null}
 
       {submitted ? (
-        <div className="mt-8 space-y-5">
-          {!isCorrect ? (
-            <>
-              <div className="flex items-center justify-center gap-2 font-sans text-base font-semibold text-[#F06292]">
-                <X className="size-6 shrink-0 stroke-[2.5]" strokeLinecap="round" aria-hidden />
-                Incorrect!
-              </div>
-              <div className="flex items-start justify-center gap-3 text-left font-sans text-base text-black">
-                <span
-                  className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-sm bg-[#2E7D32] text-white"
-                  aria-hidden
-                >
-                  <Check className="size-4 stroke-3" />
-                </span>
-                <span>
-                  <span className="font-medium">Correct Answer: </span>
-                  {correctLabel}
-                </span>
-              </div>
-            </>
-          ) : (
-            <div className="flex items-center justify-center gap-2 font-sans text-base font-semibold text-[#2E7D32]">
+        <div className="mx-auto mt-8 max-w-xl space-y-4">
+          {isCorrect ? (
+            <div className="flex items-center justify-center gap-2 rounded-lg border border-[#2E7D32]/30 bg-[#E8F5E9] px-4 py-3 font-sans text-base font-semibold text-[#2E7D32]">
               <span
-                className="flex size-6 shrink-0 items-center justify-center rounded-sm bg-[#2E7D32] text-white"
+                className="flex size-6 shrink-0 items-center justify-center rounded-full bg-[#2E7D32] text-white"
                 aria-hidden
               >
                 <Check className="size-4 stroke-3" />
               </span>
-              Correct!
+              Correct Answer
+            </div>
+          ) : (
+            <div className="flex items-center justify-center gap-2 rounded-lg border border-[#F06292]/40 bg-[#FFEBEE] px-4 py-3 font-sans text-base font-semibold text-[#F06292]">
+              <span
+                className="flex size-6 shrink-0 items-center justify-center rounded-full bg-[#F06292] text-white"
+                aria-hidden
+              >
+                <X className="size-5 stroke-[2.5]" strokeLinecap="round" />
+              </span>
+              Incorrect Answer
             </div>
           )}
-          {item.feedbackCorrect ? (
-            <p className="text-center font-sans text-base text-black">{item.feedbackCorrect}</p>
+
+          {showRationale && rationale ? (
+            <div
+              className={cn(
+                "rounded-lg border-2 p-4",
+                isCorrect
+                  ? "border-[#2E7D32] bg-[#E8F5E9]"
+                  : "border-[#F06292] bg-[#FFEBEE]",
+              )}
+            >
+              <p
+                className={cn(
+                  "font-sans text-base font-semibold",
+                  isCorrect ? "text-[#2E7D32]" : "text-[#F06292]",
+                )}
+              >
+                Rationale
+              </p>
+              <p className="mt-2 text-left font-sans text-base leading-relaxed text-black">
+                {rationale}
+              </p>
+            </div>
           ) : null}
         </div>
       ) : null}
