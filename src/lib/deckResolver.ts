@@ -1,8 +1,8 @@
-﻿import { DEFAULT_DECK_SLUG } from "@/data/specialtyResources";
+﻿import { DEFAULT_DECK_SLUG, type SpecialtySlug } from "@/data/specialtyResources";
 
 type DeckSortable = { id: number; sort_order?: number };
 
-const DECK_SLUGS = [
+const SPI_DECK_SLUGS = [
   "fundamentals",
   "transducers",
   "image-optimization",
@@ -11,14 +11,14 @@ const DECK_SLUGS = [
   "basic-metrics",
 ] as const;
 
-export type DeckSlug = (typeof DECK_SLUGS)[number];
+export type DeckSlug = (typeof SPI_DECK_SLUGS)[number];
 
 export function isDeckSlug(slug: string): slug is DeckSlug {
-  return (DECK_SLUGS as readonly string[]).includes(slug);
+  return (SPI_DECK_SLUGS as readonly string[]).includes(slug);
 }
 
 function sortByOrder<T extends DeckSortable>(items: T[]): T[] {
-  return [...items].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+  return [...items].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0) || a.id - b.id);
 }
 
 function resolveIdFromDynamicSlug<T extends DeckSortable>(
@@ -45,6 +45,7 @@ function resolveIdFromDynamicSlug<T extends DeckSortable>(
 export function resolveIdForDeckSlug<T extends DeckSortable>(
   items: T[],
   deckSlug: string | undefined,
+  specialty?: SpecialtySlug,
 ): number | undefined {
   const sorted = sortByOrder(items);
   if (sorted.length === 0) return undefined;
@@ -54,8 +55,12 @@ export function resolveIdForDeckSlug<T extends DeckSortable>(
     if (dynamicId != null) return dynamicId;
   }
 
-  const slug = deckSlug && isDeckSlug(deckSlug) ? deckSlug : DEFAULT_DECK_SLUG;
-  const index = DECK_SLUGS.indexOf(slug);
-  if (index < 0) return sorted[0]?.id;
-  return sorted[index]?.id ?? sorted[0]?.id;
+  if (specialty === "spi" || specialty == null) {
+    const slug = deckSlug && isDeckSlug(deckSlug) ? deckSlug : DEFAULT_DECK_SLUG;
+    const index = SPI_DECK_SLUGS.indexOf(slug);
+    if (index < 0) return sorted[0]?.id;
+    return sorted[index]?.id ?? sorted[0]?.id;
+  }
+
+  return sorted[0]?.id;
 }

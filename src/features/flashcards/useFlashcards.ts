@@ -27,7 +27,7 @@ export function useFlashcardsForDeck(
   deckSlug: string | undefined,
 ) {
   const contentsQuery = useFlashcardContents(specialty);
-  const contentId = resolveIdForDeckSlug(contentsQuery.data ?? [], deckSlug);
+  const contentId = resolveIdForDeckSlug(contentsQuery.data ?? [], deckSlug, specialty);
   const cardsQuery = useQuery({
     queryKey: flashcardsQueryKeys.cards(contentId ?? 0),
     queryFn: () => fetchFlashcardsForContent(contentId!),

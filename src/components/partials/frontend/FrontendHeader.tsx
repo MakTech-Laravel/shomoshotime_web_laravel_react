@@ -17,6 +17,7 @@ import { useLearningNav } from "@/features/learning/LearningNavContext";
 import { useStudyGuideNav } from "@/features/studyGuides/StudyGuideNavContext";
 import {
   buildSpecialtyDropdownLinks,
+  SPECIALTY_AUDIO_HREF,
   type SpecialtySlug,
 } from "@/data/specialtyResources";
 import { container } from "@/lib/container";
@@ -52,12 +53,12 @@ const NAV_ITEM_DEFS: {
 }[] = [
     { label: "Home", to: "/" },
     { label: "Explore Resources", to: "/exploreresources" },
-    { label: "SPI", to: "/spi", specialty: "spi", audioHref: "/audio/spi" },
+    { label: "SPI", to: "/spi", specialty: "spi", audioHref: SPECIALTY_AUDIO_HREF.spi },
     { label: "Vascular", to: "/vascular", specialty: "vascular" },
     { label: "OB/GYN", to: "/ob-gyn", specialty: "ob-gyn" },
-    { label: "Abdominal", to: "/abdominal", specialty: "abdominal" },
+    { label: "Abdomen", to: "/abdominal", specialty: "abdominal" },
+    { label: "Mock Exams", to: "/mock-exams" },
     { label: "About Us", to: "/about" },
-    { label: "Test", to: "/test" },
   ];
 
 /* -------------------------------------------------------------------------- */
@@ -344,7 +345,8 @@ function DesktopNavDropdown({ item }: { item: NavItem & { children: NavDropdownL
 
 function useNavItems(): NavItem[] {
   const { getNavChildren, isReady } = useStudyGuideNav();
-  const { getFlashcardNavChildren, getPracticeNavChildren } = useLearningNav();
+  const { getFlashcardNavChildren, getPracticeNavChildren, isReady: learningNavReady } =
+    useLearningNav();
 
   return NAV_ITEM_DEFS.map((item) => {
     if (!item.specialty) {
@@ -355,10 +357,11 @@ function useNavItems(): NavItem[] {
       label: item.label,
       to: item.to,
       children: buildSpecialtyDropdownLinks(
-        item.audioHref,
+        item.specialty ? SPECIALTY_AUDIO_HREF[item.specialty] : item.audioHref,
         getNavChildren(item.specialty),
         {
           studyGuidesReady: isReady,
+          navDataReady: learningNavReady,
           flashcardChildren: getFlashcardNavChildren(item.specialty),
           practiceChildren: getPracticeNavChildren(item.specialty),
         },
@@ -503,9 +506,13 @@ function AuthMenu() {
 /*  Mobile nav (hamburger drawer)                                             */
 /* -------------------------------------------------------------------------- */
 
-function MobileNav() {
-  const [open, setOpen] = useState(false);
-
+function MobileNav({
+  open,
+  onOpenChange,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
   return (
     <div className="lg:hidden">
       <Button
@@ -513,12 +520,12 @@ function MobileNav() {
         variant="ghost"
         className="h-12 w-12 rounded-lg p-0 text-[#333333] hover:bg-[#fafafa] sm:h-14 sm:w-14"
         aria-label={open ? "Close menu" : "Open menu"}
-        onClick={() => setOpen((prev) => !prev)}
+        onClick={() => onOpenChange(!open)}
       >
         {open ? <X className="size-7 sm:size-8" aria-hidden /> : <Menu className="size-7 sm:size-8" aria-hidden />}
       </Button>
 
-      <FrontendMobileNav open={open} onClose={() => setOpen(false)} />
+      <FrontendMobileNav open={open} onClose={() => onOpenChange(false)} />
     </div>
   );
 }
@@ -527,7 +534,13 @@ function MobileNav() {
 /*  Main exported header                                                      */
 /* -------------------------------------------------------------------------- */
 
-export function FrontendHeader() {
+export function FrontendHeader({
+  mobileNavOpen = false,
+  onMobileNavOpenChange,
+}: {
+  mobileNavOpen?: boolean;
+  onMobileNavOpenChange?: (open: boolean) => void;
+}) {
   return (
     <header className="sticky top-0 z-40 overflow-visible bg-white font-montserrat">
       <div className="border-b border-[#ebebeb] bg-white">
@@ -543,7 +556,10 @@ export function FrontendHeader() {
           </div>
           <div className="flex shrink-0 items-center gap-3 overflow-visible sm:gap-4">
             <AuthMenu />
-            <MobileNav />
+            <MobileNav
+              open={mobileNavOpen}
+              onOpenChange={onMobileNavOpenChange ?? (() => {})}
+            />
           </div>
         </div>
       </div>

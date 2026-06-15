@@ -13,6 +13,7 @@ export type ApiPracticeQuestion = {
   rationale?: string;
   file?: string;
   file_attributes?: string;
+  sort_order?: number;
 };
 
 const OPTION_KEYS = ["option_a", "option_b", "option_c", "option_d"] as const;
@@ -38,6 +39,7 @@ export function normalizeApiQuestion(raw: unknown): ApiPracticeQuestion | null {
     file: typeof o.file === "string" ? o.file : undefined,
     file_attributes:
       typeof o.file_attributes === "string" ? o.file_attributes : undefined,
+    sort_order: Number.isFinite(Number(o.sort_order)) ? Number(o.sort_order) : undefined,
   };
 }
 

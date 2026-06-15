@@ -9,6 +9,7 @@ import { ScrollToTopLayout, suspensePage } from "@/routes/routeUtils";
 const Unauthorized = lazy(() => import("@/pages/global/Unauthorized"));
 const NotFound = lazy(() => import("@/pages/global/NotFound"));
 const AdminDashboard = lazy(() => import("@/pages/admin/AdminDashboard"));
+const AdminUsersPage = lazy(() => import("@/pages/admin/AdminUsersPage"));
 
 const redirect = (to: string) => <Navigate to={to} replace />;
 
@@ -25,6 +26,14 @@ export const router = createBrowserRouter([
         element: (
           <ProtectedRoute roles="admin" forceAuth>
             {suspensePage(AdminDashboard)}
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "/admin/users",
+        element: (
+          <ProtectedRoute roles="admin" forceAuth>
+            {suspensePage(AdminUsersPage)}
           </ProtectedRoute>
         ),
       },

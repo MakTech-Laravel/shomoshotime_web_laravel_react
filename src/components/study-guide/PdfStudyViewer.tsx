@@ -3,7 +3,6 @@ import type { PDFDocumentProxy } from "pdfjs-dist";
 import {
   ChevronDown,
   ChevronUp,
-  Download,
   Eraser,
   LayoutGrid,
   MessageSquarePlus,
@@ -11,7 +10,6 @@ import {
   MousePointer2,
   Paperclip,
   Pencil,
-  Printer,
   RotateCcw,
   Search,
   X,
@@ -32,13 +30,11 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/auth/useAuth";
 import { saveStudyGuidePageProgress } from "@/features/studyGuides/studyGuideProgressApi";
-import { loadPdfBytes } from "@/lib/loadPdfBytes";
 import { isPdfDocumentCached, loadPdfDocument, type PdfLoadSources } from "@/lib/loadPdfDocument";
 import { searchPdfText } from "@/lib/pdfTextSearch";
 import { cn } from "@/lib/utils";
@@ -354,27 +350,6 @@ export function PdfStudyViewer({ pdfSources, fileName, className, contentId }: P
 
   const resetZoom = useCallback(() => setScale(1), []);
 
-  const downloadPdf = useCallback(async () => {
-    const bytes = await loadPdfBytes(pdfSources.primary);
-    const blob = new Blob([new Uint8Array(bytes)], { type: "application/pdf" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = fileName;
-    link.click();
-    URL.revokeObjectURL(url);
-  }, [pdfSources.primary, fileName]);
-
-  const printPdf = useCallback(async () => {
-    const bytes = await loadPdfBytes(pdfSources.primary);
-    const url = URL.createObjectURL(
-      new Blob([new Uint8Array(bytes)], { type: "application/pdf" }),
-    );
-    const win = window.open(url, "_blank");
-    win?.addEventListener("load", () => win.print(), { once: true });
-    URL.revokeObjectURL(url);
-  }, [pdfSources.primary]);
-
   const clearPageAnnotations = useCallback(() => {
     setAnnotations((current) => ({
       ...current,
@@ -466,7 +441,7 @@ export function PdfStudyViewer({ pdfSources, fileName, className, contentId }: P
   return (
     <div
       className={cn(
-        "flex min-h-0 flex-col overflow-hidden rounded-[2px] border border-[#d6d6d6] bg-white shadow-[0_4px_28px_rgba(0,0,0,0.09)]",
+        "pdf-study-viewer-root flex min-h-0 flex-col overflow-hidden rounded-[2px] border border-[#d6d6d6] bg-white shadow-[0_4px_28px_rgba(0,0,0,0.09)]",
         className,
       )}
     >
@@ -502,15 +477,6 @@ export function PdfStudyViewer({ pdfSources, fileName, className, contentId }: P
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="font-montserrat">
-                <DropdownMenuItem onClick={() => void downloadPdf()}>
-                  <Download className="size-4" />
-                  Download PDF
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => void printPdf()}>
-                  <Printer className="size-4" />
-                  Print
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={resetZoom}>
                   <RotateCcw className="size-4" />
                   Reset zoom

@@ -437,7 +437,6 @@ function AudioDemo() {
 type OutlineCardData = {
   cardTitle: string;
   subtitle: string;
-  audioHref?: string;
   rows: { label: string; value: string }[];
 };
 
@@ -445,7 +444,6 @@ const OUTLINE_CARDS: OutlineCardData[] = [
   {
     cardTitle: "SPI Outlines",
     subtitle: "SPI",
-    audioHref: "/audio/spi",
     rows: [
       { label: "Study Guides (Text-Based and Audio)", value: "5 Guides" },
       { label: "Flashcards", value: "370 Cards" },
@@ -552,18 +550,6 @@ function OutlinesSection() {
                     </tbody>
                   </table>
                 </div>
-
-                {card.audioHref && (
-                  <Link
-                    to={card.audioHref}
-                    className="mt-4 inline-flex items-center gap-2 self-start rounded border border-[#b8860b] px-4 py-2 text-sm font-semibold text-[#b8860b] transition-colors hover:bg-[#b8860b] hover:text-white"
-                  >
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-                      <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" />
-                    </svg>
-                    Listen Audio Guides
-                  </Link>
-                )}
               </article>
             </div>
           ))}

@@ -6,6 +6,18 @@ export type SpecialtySlug = "spi" | "vascular" | "ob-gyn" | "abdominal";
 
 export const SPECIALTY_SLUGS: SpecialtySlug[] = ["spi", "vascular", "ob-gyn", "abdominal"];
 
+export const SPECIALTY_DISPLAY_LABELS: Record<SpecialtySlug, string> = {
+  spi: "SPI",
+  vascular: "Vascular",
+  "ob-gyn": "OB/GYN",
+  abdominal: "Abdomen",
+};
+
+/** Specialty routes that have audio content available on the web. */
+export const SPECIALTY_AUDIO_HREF: Partial<Record<SpecialtySlug, string>> = {
+  spi: "/audio/spi",
+};
+
 export const DEFAULT_DECK_SLUG = "fundamentals";
 
 type DeckTemplate = {
@@ -150,6 +162,7 @@ export function buildSpecialtyDropdownLinks(
   studyGuideChildren?: { label: string; slug: string }[],
   options?: {
     studyGuidesReady?: boolean;
+    navDataReady?: boolean;
     flashcardChildren?: { label: string; slug: string }[];
     practiceChildren?: { label: string; slug: string }[];
   },
@@ -164,12 +177,16 @@ export function buildSpecialtyDropdownLinks(
   const flashcardChildren =
     options?.flashcardChildren && options.flashcardChildren.length > 0
       ? options.flashcardChildren
-      : FLASHCARD_NAV_CHILDREN;
+      : options?.navDataReady
+        ? []
+        : FLASHCARD_NAV_CHILDREN;
 
   const practiceChildren =
     options?.practiceChildren && options.practiceChildren.length > 0
       ? options.practiceChildren
-      : PRACTICE_NAV_CHILDREN;
+      : options?.navDataReady
+        ? []
+        : PRACTICE_NAV_CHILDREN;
 
   return [
     {
@@ -177,7 +194,7 @@ export function buildSpecialtyDropdownLinks(
       slug: "study-guides",
       children: studyChildren,
     },
-    { label: "Audio", slug: "audio", ...(audioHref ? { href: audioHref } : {}) },
+    ...(audioHref ? [{ label: "Audio", slug: "audio", href: audioHref }] : []),
     { label: "Flashcards", slug: "flashcards", children: flashcardChildren },
     {
       label: "Practice Questions",

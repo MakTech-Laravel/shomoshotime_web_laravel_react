@@ -7,6 +7,7 @@ import { useLearningNav } from "@/features/learning/LearningNavContext";
 import { useStudyGuideNav } from "@/features/studyGuides/StudyGuideNavContext";
 import {
   buildSpecialtyDropdownLinks,
+  SPECIALTY_AUDIO_HREF,
   type SpecialtySlug,
 } from "@/data/specialtyResources";
 import { PRICING_PLANS_PATH } from "@/lib/paths";
@@ -29,7 +30,7 @@ type MobileNavItem =
 const STUDY_MATERIALS_LINKS = [
   { label: "SPI (Ultrasound Physics)", to: "/spi" },
   { label: "Abdominal Sonography", to: "/abdominal" },
-  { label: "OB/Gyn Sonography", to: "/ob-gyn" },
+  { label: "OB/GYN Sonography", to: "/ob-gyn" },
   { label: "Vascular Sonography", to: "/vascular" },
 ] as const;
 
@@ -42,12 +43,12 @@ const MOBILE_NAV_ITEM_DEFS: {
 }[] = [
     { label: "Home", to: "/" },
     { label: "Explore Resources", to: "/exploreresources" },
-    { label: "SPI", to: "/spi", specialty: "spi", audioHref: "/audio/spi" },
+    { label: "SPI", to: "/spi", specialty: "spi", audioHref: SPECIALTY_AUDIO_HREF.spi },
     { label: "Vascular", to: "/vascular", specialty: "vascular" },
     { label: "OB/GYN", to: "/ob-gyn", specialty: "ob-gyn" },
-    { label: "Abdominal", to: "/abdominal", specialty: "abdominal" },
+    { label: "Abdomen", to: "/abdominal", specialty: "abdominal" },
+    { label: "Mock Exams", to: "/mock-exams" },
     { label: "About Us", to: "/about" },
-    { label: "Test", to: "/test" },
     {
       label: "Study Materials",
       to: "/exploreresources",
@@ -78,7 +79,8 @@ function isNavSectionActive(pathname: string, basePath: string) {
 
 function useMobileNavItems(): MobileNavItem[] {
   const { getNavChildren, isReady } = useStudyGuideNav();
-  const { getFlashcardNavChildren, getPracticeNavChildren } = useLearningNav();
+  const { getFlashcardNavChildren, getPracticeNavChildren, isReady: learningNavReady } =
+    useLearningNav();
 
   return MOBILE_NAV_ITEM_DEFS.map((item) => {
     if (item.children) {
@@ -93,10 +95,11 @@ function useMobileNavItems(): MobileNavItem[] {
       label: item.label,
       to: item.to,
       children: buildSpecialtyDropdownLinks(
-        item.audioHref,
+        item.specialty ? SPECIALTY_AUDIO_HREF[item.specialty] : item.audioHref,
         getNavChildren(item.specialty),
         {
           studyGuidesReady: isReady,
+          navDataReady: learningNavReady,
           flashcardChildren: getFlashcardNavChildren(item.specialty),
           practiceChildren: getPracticeNavChildren(item.specialty),
         },
@@ -105,24 +108,90 @@ function useMobileNavItems(): MobileNavItem[] {
   });
 }
 
-function flattenDropdownLinks(basePath: string, links: NavDropdownLink[]) {
-  const flat: { label: string; href: string }[] = [];
-  for (const child of links) {
-    if (child.children?.length) {
-      for (const sub of child.children) {
-        flat.push({
-          label: sub.label,
-          href: resourceLinkPath(basePath, child, sub),
-        });
-      }
-    } else {
-      flat.push({
-        label: child.label,
-        href: resourceLinkPath(basePath, child),
-      });
-    }
-  }
-  return flat;
+function GroupedMobileSubNav({
+  basePath,
+  links,
+  pathname,
+  openSections,
+  toggleSection,
+  onClose,
+}: {
+  basePath: string;
+  links: NavDropdownLink[];
+  pathname: string;
+  openSections: Record<string, boolean>;
+  toggleSection: (key: string) => void;
+  onClose: () => void;
+}) {
+  return (
+    <div className="bg-[#c4c4c4]">
+      {links.map((group) => {
+        const groupKey = `${basePath}-${group.slug}`;
+        const hasChildren = Boolean(group.children?.length);
+        const groupHref = !hasChildren
+          ? group.href ?? resourceLinkPath(basePath, group)
+          : undefined;
+        const isGroupOpen = openSections[groupKey] ?? false;
+
+        if (!hasChildren && groupHref) {
+          return (
+            <Link
+              key={groupKey}
+              to={groupHref}
+              onClick={onClose}
+              className={cn(
+                mobileSubLinkClass,
+                pathname === groupHref && "bg-[#bdbdbd] underline",
+              )}
+            >
+              {group.label}
+            </Link>
+          );
+        }
+
+        if (!hasChildren) return null;
+
+        return (
+          <div key={groupKey}>
+            <button
+              type="button"
+              onClick={() => toggleSection(groupKey)}
+              className={cn(
+                "flex w-full items-center justify-between border-b border-[#b8b8b8] px-8 py-3 text-left font-montserrat text-[15px] font-bold text-[#333333] hover:bg-[#bdbdbd]",
+              )}
+              aria-expanded={isGroupOpen}
+            >
+              <span>{group.label}</span>
+              <ChevronDown
+                className={cn("size-4 shrink-0 transition-transform", isGroupOpen && "rotate-180")}
+                aria-hidden
+              />
+            </button>
+            {isGroupOpen ? (
+              <div className="bg-[#b5b5b5]">
+                {group.children!.map((sub) => {
+                  const href = resourceLinkPath(basePath, group, sub);
+                  return (
+                    <Link
+                      key={href}
+                      to={href}
+                      onClick={onClose}
+                      className={cn(
+                        "block border-b border-[#a8a8a8] px-10 py-2.5 font-montserrat text-[14px] font-medium text-[#333333] last:border-b-0 hover:bg-[#adadad]",
+                        pathname === href && "bg-[#adadad] underline",
+                      )}
+                    >
+                      {sub.label}
+                    </Link>
+                  );
+                })}
+              </div>
+            ) : null}
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
 type FrontendMobileNavProps = {
@@ -224,7 +293,7 @@ export function FrontendMobileNav({ open, onClose }: FrontendMobileNavProps) {
               );
             }
 
-            const subLinks = flattenDropdownLinks(item.to, item.children!);
+            const subLinks = item.children!;
 
             return (
               <div key={item.to}>
@@ -245,21 +314,14 @@ export function FrontendMobileNav({ open, onClose }: FrontendMobileNavProps) {
                   />
                 </button>
                 {isOpen ? (
-                  <div className="bg-[#c4c4c4]">
-                    {subLinks.map((link) => (
-                      <Link
-                        key={link.href}
-                        to={link.href}
-                        onClick={onClose}
-                        className={cn(
-                          mobileSubLinkClass,
-                          location.pathname === link.href && "bg-[#bdbdbd] underline",
-                        )}
-                      >
-                        {link.label}
-                      </Link>
-                    ))}
-                  </div>
+                  <GroupedMobileSubNav
+                    basePath={item.to}
+                    links={subLinks}
+                    pathname={location.pathname}
+                    openSections={openSections}
+                    toggleSection={toggleSection}
+                    onClose={onClose}
+                  />
                 ) : null}
               </div>
             );
@@ -302,13 +364,15 @@ export function FrontendMobileNav({ open, onClose }: FrontendMobileNavProps) {
               Log In
             </Link>
           )}
-          <Link
-            to={PRICING_PLANS_PATH}
-            onClick={onClose}
-            className="mt-3 flex h-11 w-full items-center justify-center rounded-[5px] border border-black bg-[#ffc107] font-montserrat text-sm font-bold text-black"
-          >
-            Get Started
-          </Link>
+          {!isAuthenticated ? (
+            <Link
+              to={PRICING_PLANS_PATH}
+              onClick={onClose}
+              className="mt-3 flex h-11 w-full items-center justify-center rounded-[5px] border border-black bg-[#ffc107] font-montserrat text-sm font-bold text-black"
+            >
+              Get Started
+            </Link>
+          ) : null}
         </div>
       </aside>
     </>

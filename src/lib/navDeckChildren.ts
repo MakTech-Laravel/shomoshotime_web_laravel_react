@@ -1,6 +1,6 @@
-import { DEFAULT_DECK_SLUG } from "@/data/specialtyResources";
+import { DEFAULT_DECK_SLUG, type SpecialtySlug } from "@/data/specialtyResources";
 
-const DECK_SLUGS = [
+const SPI_DECK_SLUGS = [
   "fundamentals",
   "transducers",
   "image-optimization",
@@ -12,12 +12,16 @@ const DECK_SLUGS = [
 type SortableTitle = { title: string; sort_order?: number; id?: number };
 
 function sortByOrder<T extends SortableTitle>(items: T[]): T[] {
-  return [...items].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+  return [...items].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0) || (a.id ?? 0) - (b.id ?? 0));
 }
 
-function slugForIndex(item: SortableTitle, index: number): string {
-  if (index < DECK_SLUGS.length) {
-    return DECK_SLUGS[index] ?? DEFAULT_DECK_SLUG;
+function slugForItem(
+  item: SortableTitle,
+  index: number,
+  specialty: SpecialtySlug | undefined,
+): string {
+  if (specialty === "spi" && index < SPI_DECK_SLUGS.length) {
+    return SPI_DECK_SLUGS[index] ?? DEFAULT_DECK_SLUG;
   }
   if (item.id != null) {
     return `deck-${item.id}`;
@@ -25,23 +29,45 @@ function slugForIndex(item: SortableTitle, index: number): string {
   return `deck-index-${index}`;
 }
 
-/** Map API content/question sets to nav children using deck slug order. */
-export function apiItemsToNavChildren(items: SortableTitle[]): { label: string; slug: string }[] {
+/** Map API content/question sets to nav children. SPI keeps legacy slugs; other specialties use deck-{id}. */
+export function apiItemsToNavChildren(
+  items: SortableTitle[],
+  options?: { specialty?: SpecialtySlug },
+): { label: string; slug: string }[] {
   const sorted = sortByOrder(items);
   if (sorted.length === 0) return [];
 
+  const specialty = options?.specialty;
   const usedSlugs = new Set<string>();
+  const seenIds = new Set<number>();
 
-  return sorted.map((item, index) => {
-    let slug = slugForIndex(item, index);
+  const result: { label: string; slug: string }[] = [];
+
+  for (const [index, item] of sorted.entries()) {
+    if (item.id != null) {
+      if (seenIds.has(item.id)) continue;
+      seenIds.add(item.id);
+    }
+
+    let slug = slugForItem(item, index, specialty);
     if (usedSlugs.has(slug)) {
       slug = item.id != null ? `deck-${item.id}` : `deck-index-${index}`;
     }
     usedSlugs.add(slug);
 
-    return {
+    result.push({
       label: item.title.trim() || `Topic ${index + 1}`,
       slug,
-    };
-  });
+    });
+  }
+
+  return result;
+}
+
+export function firstDeckSlugForSets(
+  items: SortableTitle[],
+  specialty: SpecialtySlug,
+): string | undefined {
+  const children = apiItemsToNavChildren(items, { specialty });
+  return children[0]?.slug;
 }

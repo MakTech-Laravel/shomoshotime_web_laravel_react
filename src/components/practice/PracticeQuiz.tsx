@@ -203,23 +203,30 @@ export function PracticeQuiz({ questions, className, onSubmitAnswer }: PracticeQ
               Correct!
             </div>
           )}
-          {item.feedbackCorrect && isCorrect ? (
+          {item.feedbackCorrect ? (
             <p className="text-center font-sans text-base text-black">{item.feedbackCorrect}</p>
           ) : null}
         </div>
       ) : null}
 
-      {submitted && idx < total - 1 ? (
-        <div className="mt-10 flex justify-center">
-          <button
-            type="button"
-            onClick={() => goTo(idx + 1)}
-            className="min-h-11 rounded-lg bg-[#FFC107] px-10 font-sans text-sm font-semibold text-black transition-opacity hover:bg-[#e6ac00] sm:text-base"
-          >
-            Next Question
-          </button>
-        </div>
-      ) : null}
+      <div className="mx-auto mt-10 flex w-full max-w-md justify-center gap-3 sm:gap-4">
+        <button
+          type="button"
+          disabled={idx === 0}
+          onClick={() => goTo(Math.max(0, idx - 1))}
+          className="min-h-11 flex-1 rounded-lg bg-[#FFC107] px-6 font-sans text-sm font-semibold text-black transition-opacity hover:bg-[#e6ac00] disabled:cursor-not-allowed disabled:opacity-45 sm:text-base"
+        >
+          Back
+        </button>
+        <button
+          type="button"
+          disabled={!submitted || idx >= total - 1}
+          onClick={() => goTo(idx + 1)}
+          className="min-h-11 flex-1 rounded-lg bg-[#FFC107] px-6 font-sans text-sm font-semibold text-black transition-opacity hover:bg-[#e6ac00] disabled:cursor-not-allowed disabled:opacity-45 sm:text-base"
+        >
+          Next
+        </button>
+      </div>
     </ResourceContentCard>
   );
 }
