@@ -345,8 +345,7 @@ function DesktopNavDropdown({ item }: { item: NavItem & { children: NavDropdownL
 
 function useNavItems(): NavItem[] {
   const { getNavChildren, isReady } = useStudyGuideNav();
-  const { getFlashcardNavChildren, getPracticeNavChildren, isReady: learningNavReady } =
-    useLearningNav();
+  const { getFlashcardNavChildren, getPracticeNavChildren } = useLearningNav();
 
   return NAV_ITEM_DEFS.map((item) => {
     if (!item.specialty) {
@@ -361,7 +360,6 @@ function useNavItems(): NavItem[] {
         getNavChildren(item.specialty),
         {
           studyGuidesReady: isReady,
-          navDataReady: learningNavReady,
           flashcardChildren: getFlashcardNavChildren(item.specialty),
           practiceChildren: getPracticeNavChildren(item.specialty),
         },

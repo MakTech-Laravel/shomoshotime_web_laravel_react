@@ -162,7 +162,6 @@ export function buildSpecialtyDropdownLinks(
   studyGuideChildren?: { label: string; slug: string }[],
   options?: {
     studyGuidesReady?: boolean;
-    navDataReady?: boolean;
     flashcardChildren?: { label: string; slug: string }[];
     practiceChildren?: { label: string; slug: string }[];
   },
@@ -177,16 +176,12 @@ export function buildSpecialtyDropdownLinks(
   const flashcardChildren =
     options?.flashcardChildren && options.flashcardChildren.length > 0
       ? options.flashcardChildren
-      : options?.navDataReady
-        ? []
-        : FLASHCARD_NAV_CHILDREN;
+      : [];
 
   const practiceChildren =
     options?.practiceChildren && options.practiceChildren.length > 0
       ? options.practiceChildren
-      : options?.navDataReady
-        ? []
-        : PRACTICE_NAV_CHILDREN;
+      : [];
 
   return [
     {

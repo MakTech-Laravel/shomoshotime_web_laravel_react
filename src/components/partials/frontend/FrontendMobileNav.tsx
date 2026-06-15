@@ -79,8 +79,7 @@ function isNavSectionActive(pathname: string, basePath: string) {
 
 function useMobileNavItems(): MobileNavItem[] {
   const { getNavChildren, isReady } = useStudyGuideNav();
-  const { getFlashcardNavChildren, getPracticeNavChildren, isReady: learningNavReady } =
-    useLearningNav();
+  const { getFlashcardNavChildren, getPracticeNavChildren } = useLearningNav();
 
   return MOBILE_NAV_ITEM_DEFS.map((item) => {
     if (item.children) {
@@ -99,7 +98,6 @@ function useMobileNavItems(): MobileNavItem[] {
         getNavChildren(item.specialty),
         {
           studyGuidesReady: isReady,
-          navDataReady: learningNavReady,
           flashcardChildren: getFlashcardNavChildren(item.specialty),
           practiceChildren: getPracticeNavChildren(item.specialty),
         },
