@@ -9,11 +9,18 @@ const Home = lazy(() => import("@/pages/frontend/Home"));
 const ExploreResources = lazy(() => import("@/pages/frontend/ExploreResources"));
 const PricingPlans = lazy(() => import("@/pages/frontend/PricingPlans"));
 const AboutUs = lazy(() => import("@/pages/frontend/AboutUs"));
-const Test = lazy(() => import("@/pages/frontend/Test"));
+const FaqPage = lazy(() => import("@/pages/frontend/FaqPage"));
+const ContactPage = lazy(() => import("@/pages/frontend/ContactPage"));
+const TermsPage = lazy(() => import("@/pages/frontend/TermsPage"));
+const PrivacyPolicyPage = lazy(() => import("@/pages/frontend/PrivacyPolicyPage"));
+const SpecialtyLandingPage = lazy(() => import("@/pages/frontend/SpecialtyLandingPage"));
 const StudyGuideViewerPage = lazy(() => import("@/pages/frontend/StudyGuideViewerPage"));
 const SpiAudioPage = lazy(() => import("@/pages/frontend/SpiAudioPage"));
+const SpecialtyAudioPage = lazy(() => import("@/pages/frontend/SpecialtyAudioPage"));
 const SpecialtyFlashcardsPage = lazy(() => import("@/pages/frontend/SpecialtyFlashcardsPage"));
 const SpecialtyPracticePage = lazy(() => import("@/pages/frontend/SpecialtyPracticePage"));
+const MockExamsPage = lazy(() => import("@/pages/frontend/MockExamsPage"));
+const MockExamSessionPage = lazy(() => import("@/pages/frontend/MockExamSessionPage"));
 const UserAccountPage = lazy(() => import("@/pages/user/UserAccountPage"));
 const LegacyUserDashboardRedirect = lazy(() =>
   import("@/components/user/LegacyUserDashboardRedirect").then((m) => ({
@@ -26,12 +33,22 @@ export const publicRoutes: RouteObject = {
   children: [
     { path: "/", element: suspensePage(Home) },
     { path: "/exploreresources", element: suspensePage(ExploreResources) },
+    { path: "/explore", element: <Navigate to="/exploreresources" replace /> },
     { path: "/pricing-plans", element: suspensePage(PricingPlans) },
     { path: "/pricing", element: <Navigate to="/pricing-plans" replace /> },
     { path: "/plans", element: <Navigate to="/pricing-plans" replace /> },
     { path: "/about", element: suspensePage(AboutUs) },
     { path: "/about-us", element: <Navigate to="/about" replace /> },
-    { path: "/test", element: suspensePage(Test) },
+    { path: "/faq", element: suspensePage(FaqPage) },
+    { path: "/contact", element: suspensePage(ContactPage) },
+    { path: "/terms", element: suspensePage(TermsPage) },
+    { path: "/privacy-policy", element: suspensePage(PrivacyPolicyPage) },
+    { path: "/test", element: <Navigate to="/mock-exams" replace /> },
+    { path: "/spi", element: suspensePage(SpecialtyLandingPage) },
+    { path: "/vascular", element: suspensePage(SpecialtyLandingPage) },
+    { path: "/ob-gyn", element: suspensePage(SpecialtyLandingPage) },
+    { path: "/abdominal", element: suspensePage(SpecialtyLandingPage) },
+    { path: "/audio/spi", element: suspensePage(SpiAudioPage) },
     {
       element: (
         <ProtectedRoute forceAuth loginPath="/login/email" />
@@ -47,11 +64,13 @@ export const publicRoutes: RouteObject = {
         { path: "/dashboard", element: suspensePage(LegacyUserDashboardRedirect) },
       ],
     },
-    { path: "/audio/spi", element: suspensePage(SpiAudioPage) },
     {
       element: <ProtectedRoute forceAuth loginPath="/login" />,
       children: [
+        { path: "/mock-exams", element: suspensePage(MockExamsPage) },
+        { path: "/mock-exams/:setId", element: suspensePage(MockExamSessionPage) },
         { path: "/:specialty/study-guides/:section", element: suspensePage(StudyGuideViewerPage) },
+        { path: "/:specialty/audio", element: suspensePage(SpecialtyAudioPage) },
         { path: "/:specialty/flashcards", element: suspensePage(SpecialtyFlashcardsPage) },
         { path: "/:specialty/flashcards/:deck", element: suspensePage(SpecialtyFlashcardsPage) },
         { path: "/:specialty/practice-questions", element: suspensePage(SpecialtyPracticePage) },

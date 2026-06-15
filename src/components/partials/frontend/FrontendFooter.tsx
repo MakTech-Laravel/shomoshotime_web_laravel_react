@@ -11,7 +11,7 @@ const FOOTER_COLUMNS: { title: string; links: readonly FooterLink[] }[] = [
     links: [
       { label: "SPI (Ultrasound Physics)", to: "/spi" },
       { label: "Abdominal Sonography", to: "/abdominal" },
-      { label: "OB/Gyn Sonography", to: "/ob-gyn" },
+      { label: "OB/GYN Sonography", to: "/ob-gyn" },
       { label: "Vascular Sonography", to: "/vascular" },
     ],
   },
@@ -19,7 +19,7 @@ const FOOTER_COLUMNS: { title: string; links: readonly FooterLink[] }[] = [
     title: "Resources",
     links: [
       { label: "Pricing", to: "/pricing-plans" },
-      { label: "Explore Resources", to: "/explore" },
+      { label: "Explore Resources", to: "/exploreresources" },
       { label: "About us", to: "/about" },
       { label: "FAQ", to: "/faq" },
     ],

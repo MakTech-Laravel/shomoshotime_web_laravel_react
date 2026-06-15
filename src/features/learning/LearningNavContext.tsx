@@ -4,6 +4,10 @@ import { useQueries } from "@tanstack/react-query";
 import { useAuth } from "@/auth/useAuth";
 import type { SpecialtySlug } from "@/data/specialtyResources";
 import { SPECIALTY_SLUGS } from "@/data/specialtyResources";
+import {
+  fetchPublicFlashcardDecks,
+  fetchPublicPracticeSets,
+} from "@/features/content/publicContentApi";
 import { fetchFlashcardContents } from "@/features/flashcards/flashcardsApi";
 import { fetchPracticeQuestionSets } from "@/features/practice/practiceApi";
 import { apiItemsToNavChildren } from "@/lib/navDeckChildren";
@@ -24,18 +28,22 @@ export function LearningNavProvider({ children }: { children: ReactNode }) {
 
   const flashcardQueries = useQueries({
     queries: SPECIALTY_SLUGS.map((specialty) => ({
-      queryKey: ["nav", "flashcards", specialty],
-      queryFn: () => fetchFlashcardContents(specialty),
-      enabled: isAuthenticated,
+      queryKey: ["nav", "flashcards", specialty, isAuthenticated],
+      queryFn: () =>
+        isAuthenticated
+          ? fetchFlashcardContents(specialty)
+          : fetchPublicFlashcardDecks(specialty),
       staleTime: 5 * 60 * 1000,
     })),
   });
 
   const practiceQueries = useQueries({
     queries: SPECIALTY_SLUGS.map((specialty) => ({
-      queryKey: ["nav", "practice", specialty],
-      queryFn: () => fetchPracticeQuestionSets(specialty),
-      enabled: isAuthenticated,
+      queryKey: ["nav", "practice", specialty, isAuthenticated],
+      queryFn: () =>
+        isAuthenticated
+          ? fetchPracticeQuestionSets(specialty)
+          : fetchPublicPracticeSets(specialty),
       staleTime: 5 * 60 * 1000,
     })),
   });
@@ -44,7 +52,7 @@ export function LearningNavProvider({ children }: { children: ReactNode }) {
     const map: Partial<Record<SpecialtySlug, NavChild[]>> = {};
     SPECIALTY_SLUGS.forEach((specialty, i) => {
       const data = flashcardQueries[i]?.data ?? [];
-      const children = apiItemsToNavChildren(data);
+      const children = apiItemsToNavChildren(data, { specialty });
       if (children.length > 0) map[specialty] = children;
     });
     return map;
@@ -54,7 +62,7 @@ export function LearningNavProvider({ children }: { children: ReactNode }) {
     const map: Partial<Record<SpecialtySlug, NavChild[]>> = {};
     SPECIALTY_SLUGS.forEach((specialty, i) => {
       const data = practiceQueries[i]?.data ?? [];
-      const children = apiItemsToNavChildren(data);
+      const children = apiItemsToNavChildren(data, { specialty });
       if (children.length > 0) map[specialty] = children;
     });
     return map;
@@ -63,8 +71,7 @@ export function LearningNavProvider({ children }: { children: ReactNode }) {
   const isLoading =
     flashcardQueries.some((q) => q.isLoading) || practiceQueries.some((q) => q.isLoading);
   const isReady =
-    !isAuthenticated ||
-    (flashcardQueries.every((q) => q.isFetched) && practiceQueries.every((q) => q.isFetched));
+    flashcardQueries.every((q) => q.isFetched) && practiceQueries.every((q) => q.isFetched);
 
   const getFlashcardNavChildren = useCallback(
     (specialty: SpecialtySlug) => flashcardsBySpecialty[specialty] ?? [],

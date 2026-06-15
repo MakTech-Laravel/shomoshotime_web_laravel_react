@@ -27,3 +27,9 @@
   scrollbar-width: thin;
   scrollbar-color: #3d3d3d #f0f0f0;
 }
+
+@media print {
+  .pdf-study-viewer-root {
+    display: none !important;
+  }
+}

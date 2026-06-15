@@ -55,7 +55,10 @@ export async function fetchFlashcardContents(
     per_page: 50,
   });
   const { rows } = unwrapLaravelPaginatedData(res.data);
-  return rows.map(normalizeContent).filter((r): r is FlashcardContent => r !== null);
+  return rows
+    .map(normalizeContent)
+    .filter((r): r is FlashcardContent => r !== null)
+    .sort((a, b) => a.sort_order - b.sort_order || a.id - b.id);
 }
 
 export async function fetchFlashcardsForContent(contentId: number): Promise<ApiFlashcard[]> {

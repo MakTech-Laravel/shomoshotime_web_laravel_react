@@ -1,21 +1,30 @@
 import { useCallback, useEffect, useMemo } from "react";
 import { Navigate, useParams } from "react-router-dom";
 import { FlashcardDeck } from "@/components/flashcards/FlashcardDeck";
-import { DEFAULT_DECK_SLUG, getFlashcardDeck, type SpecialtySlug } from "@/data/specialtyResources";
+import { getFlashcardDeck, type SpecialtySlug } from "@/data/specialtyResources";
 import { isValidSpecialty } from "@/data/studyGuideContent";
 import { recordFlashcardProgress } from "@/features/flashcards/flashcardsApi";
-import { useFlashcardsForDeck } from "@/features/flashcards/useFlashcards";
+import { useFlashcardContents, useFlashcardsForDeck } from "@/features/flashcards/useFlashcards";
 import { container } from "@/lib/container";
+import { firstDeckSlugForSets } from "@/lib/navDeckChildren";
 import { cn } from "@/lib/utils";
 
 export default function SpecialtyFlashcardsPage() {
   const { specialty, deck: deckSlug } = useParams<{ specialty: string; deck?: string }>();
+  const specialtySlug = specialty as SpecialtySlug;
   const deck = getFlashcardDeck(specialty, deckSlug);
   const { cards: apiCards, contentId, content } = useFlashcardsForDeck(
-    specialty as SpecialtySlug,
+    specialtySlug,
     deckSlug,
   );
-  const pageTitle = deck?.title ?? content?.title ?? "Flashcards";
+  const { data: contents, isFetched: contentsFetched } = useFlashcardContents(specialtySlug);
+
+  const defaultDeckSlug = useMemo(
+    () => firstDeckSlugForSets(contents ?? [], specialtySlug),
+    [contents, specialtySlug],
+  );
+  const pageTitle =
+    content?.title ?? (specialty === "spi" ? deck?.title : undefined) ?? "Flashcards";
 
   const cards = useMemo(
     () =>
@@ -43,12 +52,12 @@ export default function SpecialtyFlashcardsPage() {
     return <Navigate to="/" replace />;
   }
 
-  if (!deckSlug) {
-    return <Navigate to={`/${specialty}/flashcards/${DEFAULT_DECK_SLUG}`} replace />;
+  if (!deckSlug && contentsFetched && defaultDeckSlug) {
+    return <Navigate to={`/${specialty}/flashcards/${defaultDeckSlug}`} replace />;
   }
 
-  if (!deck && contentId == null) {
-    return <Navigate to={`/${specialty}/flashcards/${DEFAULT_DECK_SLUG}`} replace />;
+  if (deckSlug && contentsFetched && contentId == null && defaultDeckSlug) {
+    return <Navigate to={`/${specialty}/flashcards/${defaultDeckSlug}`} replace />;
   }
 
   return (

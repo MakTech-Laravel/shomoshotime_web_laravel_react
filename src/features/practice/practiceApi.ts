@@ -41,11 +41,18 @@ export async function fetchPracticeQuestionSets(
     return rows
       .map(normalizeSet)
       .filter((r): r is QuestionSetSummary => r !== null)
-      .filter((s) => categoryMatchesSpecialty(s.category, specialty));
+      .filter((s) => categoryMatchesSpecialty(s.category, specialty))
+      .sort((a, b) => a.sort_order - b.sort_order || a.id - b.id);
   } catch (error) {
     if (emptyListOnNotFound(error)) return [];
     throw error;
   }
+}
+
+export function sortPracticeQuestions(questions: ApiPracticeQuestion[]): ApiPracticeQuestion[] {
+  return [...questions].sort(
+    (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0) || a.id - b.id,
+  );
 }
 
 export async function fetchQuestionsForSet(
@@ -57,7 +64,9 @@ export async function fetchQuestionsForSet(
       per_page: 200,
     });
     const { rows } = unwrapLaravelPaginatedData(res.data);
-    return rows.map(normalizeApiQuestion).filter((r): r is ApiPracticeQuestion => r !== null);
+    return sortPracticeQuestions(
+      rows.map(normalizeApiQuestion).filter((r): r is ApiPracticeQuestion => r !== null),
+    );
   } catch (error) {
     if (emptyListOnNotFound(error)) return [];
     throw error;
