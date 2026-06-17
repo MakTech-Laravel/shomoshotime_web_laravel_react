@@ -556,7 +556,7 @@ export function FrontendHeader({
             <AuthMenu />
             <MobileNav
               open={mobileNavOpen}
-              onOpenChange={onMobileNavOpenChange ?? (() => {})}
+              onOpenChange={onMobileNavOpenChange ?? (() => { })}
             />
           </div>
         </div>

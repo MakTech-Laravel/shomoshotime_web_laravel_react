@@ -135,6 +135,8 @@ export default function PricingPlans() {
     document.title = "Plans & Pricing | Sonographer Pal";
   }, []);
 
+  console.log('check plans', plans)
+
   useEffect(() => {
     if (searchParams.get("checkout") !== "cancelled") return;
     toast.error("Checkout was cancelled.");

@@ -205,7 +205,7 @@ export function FrontendMobileNav({ open, onClose }: FrontendMobileNavProps) {
     user?.name?.trim() || user?.email?.split("@")[0]?.trim() || "";
   const avatarSrc = getUserAvatarSrc(user);
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
-
+  const [showAccountMenu, setShowAccountMenu] = useState(false);
   useEffect(() => {
     if (!open) return;
     const previous = document.body.style.overflow;
@@ -230,42 +230,63 @@ export function FrontendMobileNav({ open, onClose }: FrontendMobileNavProps) {
         onClick={onClose}
       />
       <aside className="fixed inset-0 z-50 flex flex-col bg-[#cccccc] font-montserrat lg:hidden">
-        <div className="flex items-center justify-between border-b border-[#b8b8b8] px-5 py-4">
-          {isAuthenticated ? (
-            <div className="flex items-center gap-3">
-              <span className="flex size-10 shrink-0 overflow-hidden rounded-full bg-[#e8f4fc]">
-                <HeaderAvatar
-                  src={avatarSrc}
-                  alt={displayName || "Account"}
-                  className="h-full w-full"
-                />
-              </span>
-              {displayName ? (
-                <span className="text-[17px] font-bold text-[#333333]">{displayName}</span>
-              ) : null}
-            </div>
-          ) : (
-            <Link
-              to="/login"
-              onClick={onClose}
-              className="inline-flex items-center gap-2"
-              aria-label="Log in"
-            >
-              <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-black text-white">
-                <User className="size-5" strokeWidth={2} aria-hidden />
-              </span>
-              <span className="text-[17px] font-bold text-[#333333]">Log In</span>
-            </Link>
-          )}
+        <div className="relative flex items-center gap-3">
+          <span className="flex size-10 shrink-0 overflow-hidden rounded-full bg-[#e8f4fc]">
+            <HeaderAvatar
+              src={avatarSrc}
+              alt={displayName || "Account"}
+              className="h-full w-full"
+            />
+          </span>
+
+          {/* {displayName ? (
+            <span className="text-[17px] font-bold text-[#333333]">
+              {displayName}
+            </span>
+          ) : null} */}
 
           <button
             type="button"
-            onClick={onClose}
-            className="p-1 text-[#333333]"
-            aria-label="Close menu"
+            onClick={() => setShowAccountMenu((prev) => !prev)}
+            className="ml-1"
           >
-            <X className="size-8" strokeWidth={1.5} aria-hidden />
+            <ChevronDown
+              className={cn(
+                "size-5 transition-transform",
+                showAccountMenu && "rotate-180"
+              )}
+            />
           </button>
+
+          {showAccountMenu && (
+            <div className="absolute left-0 top-full z-50 mt-3 w-64 overflow-hidden rounded-md border border-[#e8e8e8] bg-white shadow-lg">
+              {USER_ACCOUNT_TABS.map(({ label, view }, index) => (
+                <Link
+                  key={view}
+                  to={userAccountHref(view)}
+                  onClick={onClose}
+                  className={cn(
+                    "block px-4 py-3 text-[15px] text-[#333333] hover:bg-[#fffbf0] hover:text-[#c5a028]",
+                    index < USER_ACCOUNT_TABS.length - 1 &&
+                    "border-b border-[#f0f0f0]"
+                  )}
+                >
+                  {label}
+                </Link>
+              ))}
+
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  void logout();
+                }}
+                className="w-full border-t border-[#f0f0f0] px-4 py-3 text-left text-[15px] text-[#333333] hover:bg-[#fffbf0] hover:text-[#c5a028]"
+              >
+                Log Out
+              </button>
+            </div>
+          )}
         </div>
 
         <nav className="flex-1 overflow-y-auto">
@@ -326,52 +347,7 @@ export function FrontendMobileNav({ open, onClose }: FrontendMobileNavProps) {
           })}
         </nav>
 
-        <div className="border-t border-[#b8b8b8] p-5">
-          {isAuthenticated ? (
-            <div className="overflow-hidden rounded-md border border-[#e8e8e8] bg-white">
-              {USER_ACCOUNT_TABS.map(({ label, view }, index) => (
-                <Link
-                  key={view}
-                  to={userAccountHref(view)}
-                  onClick={onClose}
-                  className={cn(
-                    "block px-4 py-3 font-montserrat text-[15px] font-normal text-[#333333] hover:bg-[#fffbf0] hover:text-[#c5a028]",
-                    index < USER_ACCOUNT_TABS.length - 1 && "border-b border-[#f0f0f0]",
-                  )}
-                >
-                  {label}
-                </Link>
-              ))}
-              <button
-                type="button"
-                onClick={() => {
-                  onClose();
-                  void logout();
-                }}
-                className="w-full border-t border-[#f0f0f0] px-4 py-3 text-left font-montserrat text-[15px] font-normal text-[#333333] hover:bg-[#fffbf0] hover:text-[#c5a028]"
-              >
-                Log Out
-              </button>
-            </div>
-          ) : (
-            <Link
-              to="/login"
-              onClick={onClose}
-              className="flex h-11 w-full items-center justify-center rounded-[5px] border border-[#e8e8e8] bg-white font-montserrat text-sm font-bold text-[#333333] hover:bg-[#fffbf0]"
-            >
-              Log In
-            </Link>
-          )}
-          {!isAuthenticated ? (
-            <Link
-              to={PRICING_PLANS_PATH}
-              onClick={onClose}
-              className="mt-3 flex h-11 w-full items-center justify-center rounded-[5px] border border-black bg-[#ffc107] font-montserrat text-sm font-bold text-black"
-            >
-              Get Started
-            </Link>
-          ) : null}
-        </div>
+
       </aside>
     </>
   );

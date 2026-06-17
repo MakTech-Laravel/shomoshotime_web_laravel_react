@@ -11,7 +11,6 @@ export async function fetchCurrentUser(): Promise<AuthUser | null> {
   const pathCandidates = Array.from(
     new Set([endpoints.userProfile, env.authMePath, '/user/profile'].filter(Boolean)),
   )
-
   for (const path of pathCandidates) {
     try {
       const res = await api.post<unknown>(path, {}, { skipAuthRedirect: true })
