@@ -1,6 +1,5 @@
 import { useEffect, useMemo } from "react";
 import { Navigate, useParams } from "react-router-dom";
-import { useQueryClient } from "@tanstack/react-query";
 
 import "@/lib/configurePdfWorker";
 import { PdfStudyViewer } from "@/components/study-guide/PdfStudyViewer";
@@ -9,12 +8,11 @@ import {
   useStudyGuideNav,
 } from "@/features/studyGuides/StudyGuideNavContext";
 import { resolveStudyGuidePdfSources } from "@/features/studyGuides/pdfSource";
-import { studyGuidesQueryKeys, useStudyGuideBySlug } from "@/features/studyGuides/usePublicStudyGuides";
+import { useStudyGuideBySlug } from "@/features/studyGuides/usePublicStudyGuides";
 import { isValidSpecialty } from "@/data/studyGuideContent";
 import { container } from "@/lib/container";
 
 export default function StudyGuideViewerPage() {
-  const queryClient = useQueryClient();
   const { specialty, section } = useParams<{ specialty: string; section: string }>();
   const { guidesBySpecialty, isReady } = useStudyGuideNav();
 
@@ -40,13 +38,6 @@ export default function StudyGuideViewerPage() {
     () => (guide ? resolveStudyGuidePdfSources(guide) : null),
     [guide?.id, guide?.file_url, guide?.file_src, guide?.updated_at, guide?.has_file],
   );
-
-  useEffect(() => {
-    void queryClient.invalidateQueries({ queryKey: studyGuidesQueryKeys.all });
-    if (slug) {
-      void queryClient.invalidateQueries({ queryKey: studyGuidesQueryKeys.slug(slug) });
-    }
-  }, [queryClient, slug]);
 
   useEffect(() => {
     if (guide) {

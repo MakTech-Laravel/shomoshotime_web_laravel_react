@@ -1,15 +1,12 @@
 import { createContext, useCallback, useContext, useMemo, type ReactNode } from "react";
-import { useQueries, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 
-import { useAuth } from "@/auth/useAuth";
 import type { SpecialtySlug } from "@/data/specialtyResources";
 import { SPECIALTY_SLUGS } from "@/data/specialtyResources";
 import {
   fetchGuestLearningNavMetadata,
   type PublicDeckMetadata,
 } from "@/features/content/publicContentApi";
-import { fetchFlashcardContents } from "@/features/flashcards/flashcardsApi";
-import { fetchPracticeQuestionSets } from "@/features/practice/practiceApi";
 import { useStudyGuideNav } from "@/features/studyGuides/StudyGuideNavContext";
 import type { PublicStudyGuide } from "@/features/studyGuides/types";
 import { specialtyForContentCategory } from "@/features/studyGuides/specialtyCategory";
@@ -67,72 +64,34 @@ function navChildrenFromStudyGuides(
 }
 
 export function LearningNavProvider({ children }: { children: ReactNode }) {
-  const { isAuthenticated } = useAuth();
   const { guidesBySpecialty, isReady: studyGuidesReady } = useStudyGuideNav();
 
-  const guestNavQuery = useQuery({
-    queryKey: ["nav", "guest-learning-metadata"],
+  const learningNavQuery = useQuery({
+    queryKey: ["nav", "learning-metadata"],
     queryFn: fetchGuestLearningNavMetadata,
-    enabled: !isAuthenticated,
     staleTime: NAV_STALE_MS,
-    retry: 1,
+    retry: false,
   });
 
-  const flashcardQueries = useQueries({
-    queries: SPECIALTY_SLUGS.map((specialty) => ({
-      queryKey: ["nav", "flashcards", specialty, "auth"],
-      queryFn: () => fetchFlashcardContents(specialty),
-      enabled: isAuthenticated,
-      staleTime: NAV_STALE_MS,
-    })),
-  });
+  const flashcardsBySpecialty = useMemo(
+    () => groupDeckMetadataBySpecialty(learningNavQuery.data?.flashcards ?? []),
+    [learningNavQuery.data?.flashcards],
+  );
 
-  const practiceQueries = useQueries({
-    queries: SPECIALTY_SLUGS.map((specialty) => ({
-      queryKey: ["nav", "practice", specialty, "auth"],
-      queryFn: () => fetchPracticeQuestionSets(specialty),
-      enabled: isAuthenticated,
-      staleTime: NAV_STALE_MS,
-    })),
-  });
+  const practiceBySpecialty = useMemo(
+    () => groupDeckMetadataBySpecialty(learningNavQuery.data?.practice ?? []),
+    [learningNavQuery.data?.practice],
+  );
 
-  const flashcardsBySpecialty = useMemo(() => {
-    if (!isAuthenticated) {
-      return groupDeckMetadataBySpecialty(guestNavQuery.data?.flashcards ?? []);
-    }
-
-    const map: Partial<Record<SpecialtySlug, NavChild[]>> = {};
-    SPECIALTY_SLUGS.forEach((specialty, i) => {
-      const data = flashcardQueries[i]?.data ?? [];
-      const children = apiItemsToNavChildren(data, { specialty });
-      if (children.length > 0) map[specialty] = children;
-    });
-    return map;
-  }, [flashcardQueries, guestNavQuery.data?.flashcards, isAuthenticated]);
-
-  const practiceBySpecialty = useMemo(() => {
-    if (!isAuthenticated) {
-      return groupDeckMetadataBySpecialty(guestNavQuery.data?.practice ?? []);
-    }
-
-    const map: Partial<Record<SpecialtySlug, NavChild[]>> = {};
-    SPECIALTY_SLUGS.forEach((specialty, i) => {
-      const data = practiceQueries[i]?.data ?? [];
-      const children = apiItemsToNavChildren(data, { specialty });
-      if (children.length > 0) map[specialty] = children;
-    });
-    return map;
-  }, [guestNavQuery.data?.practice, isAuthenticated, practiceQueries]);
-
-  const guestNavLoaded = guestNavQuery.isFetched;
+  const guestNavLoaded = learningNavQuery.isFetched;
   const guestNavHasDeckData =
-    (guestNavQuery.data?.flashcards.length ?? 0) > 0 ||
-    (guestNavQuery.data?.practice.length ?? 0) > 0;
+    (learningNavQuery.data?.flashcards.length ?? 0) > 0 ||
+    (learningNavQuery.data?.practice.length ?? 0) > 0;
 
   const getFlashcardNavChildren = useCallback(
     (specialty: SpecialtySlug) => {
       const fromDecks = flashcardsBySpecialty[specialty] ?? [];
-      if (fromDecks.length > 0 || isAuthenticated) return fromDecks;
+      if (fromDecks.length > 0) return fromDecks;
       if (!guestNavLoaded || guestNavHasDeckData || !studyGuidesReady) return [];
       return navChildrenFromStudyGuides(guidesBySpecialty, specialty);
     },
@@ -141,7 +100,6 @@ export function LearningNavProvider({ children }: { children: ReactNode }) {
       guestNavHasDeckData,
       guestNavLoaded,
       guidesBySpecialty,
-      isAuthenticated,
       studyGuidesReady,
     ],
   );
@@ -149,36 +107,26 @@ export function LearningNavProvider({ children }: { children: ReactNode }) {
   const getPracticeNavChildren = useCallback(
     (specialty: SpecialtySlug) => {
       const fromSets = practiceBySpecialty[specialty] ?? [];
-      if (fromSets.length > 0 || isAuthenticated) return fromSets;
+      if (fromSets.length > 0) return fromSets;
       if (!guestNavLoaded || guestNavHasDeckData || !studyGuidesReady) return [];
       return navChildrenFromStudyGuides(guidesBySpecialty, specialty);
     },
-    [
-      guestNavHasDeckData,
-      guestNavLoaded,
-      guidesBySpecialty,
-      isAuthenticated,
-      practiceBySpecialty,
-      studyGuidesReady,
-    ],
+    [guestNavHasDeckData, guestNavLoaded, guidesBySpecialty, practiceBySpecialty, studyGuidesReady],
   );
-
-  const isLoading = isAuthenticated
-    ? flashcardQueries.some((q) => q.isLoading) || practiceQueries.some((q) => q.isLoading)
-    : guestNavQuery.isLoading;
-
-  const isReady = isAuthenticated
-    ? flashcardQueries.every((q) => q.isFetched) && practiceQueries.every((q) => q.isFetched)
-    : guestNavQuery.isFetched;
 
   const value = useMemo(
     () => ({
       getFlashcardNavChildren,
       getPracticeNavChildren,
-      isLoading,
-      isReady,
+      isLoading: learningNavQuery.isLoading,
+      isReady: learningNavQuery.isFetched,
     }),
-    [getFlashcardNavChildren, getPracticeNavChildren, isLoading, isReady],
+    [
+      getFlashcardNavChildren,
+      getPracticeNavChildren,
+      learningNavQuery.isFetched,
+      learningNavQuery.isLoading,
+    ],
   );
 
   return <LearningNavContext.Provider value={value}>{children}</LearningNavContext.Provider>;
