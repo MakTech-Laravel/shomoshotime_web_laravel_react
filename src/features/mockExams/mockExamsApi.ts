@@ -16,6 +16,10 @@ export type MockExamSet = {
   status: number;
   status_label: string;
   total_questions: number;
+  attempts_used: number;
+  attempts_remaining: number;
+  can_start: boolean;
+  best_score_percentage: number;
 };
 
 export type MockTestAttemptSummary = {
@@ -34,6 +38,21 @@ function normalizeMockSet(raw: unknown): MockExamSet | null {
   const o = raw as Record<string, unknown>;
   const id = Number(o.id);
   if (!Number.isFinite(id)) return null;
+
+  const analyticsList = Array.isArray(o.analytics) ? o.analytics : [];
+  const analytics =
+    analyticsList.length > 0 && typeof analyticsList[0] === "object"
+      ? (analyticsList[0] as Record<string, unknown>)
+      : null;
+  const mockTest =
+    analytics?.mock_test && typeof analytics.mock_test === "object"
+      ? (analytics.mock_test as Record<string, unknown>)
+      : null;
+
+  const attemptsUsed = Number(mockTest?.total_attempts ?? 0);
+  const attemptsRemaining = Number(mockTest?.remaining_attempts ?? 3);
+  const canStart = mockTest?.can_start !== false && attemptsRemaining > 0;
+
   return {
     id,
     sort_order: Number(o.sort_order ?? 0),
@@ -43,6 +62,10 @@ function normalizeMockSet(raw: unknown): MockExamSet | null {
     status: Number(o.status ?? 0),
     status_label: String(o.status_label ?? ""),
     total_questions: Number(o.total_questions ?? 0),
+    attempts_used: Number.isFinite(attemptsUsed) ? attemptsUsed : 0,
+    attempts_remaining: Number.isFinite(attemptsRemaining) ? attemptsRemaining : 3,
+    can_start: canStart,
+    best_score_percentage: Number(mockTest?.best_percentage ?? 0),
   };
 }
 

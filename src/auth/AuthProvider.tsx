@@ -21,6 +21,14 @@ import { env } from '@/config/env'
 
 const authPaths = resolveAuthEndpoints()
 
+function usersMatch(a: AuthUser | null, b: AuthUser | null): boolean {
+  if (!a || !b) return false
+  if (a.id != null && b.id != null) return String(a.id) === String(b.id)
+  const aEmail = a.email?.trim().toLowerCase()
+  const bEmail = b.email?.trim().toLowerCase()
+  return Boolean(aEmail && bEmail && aEmail === bEmail)
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   ensureCrossTabAuthMirror()
   const initialToken = React.useMemo(() => getAccessToken(), [])
@@ -131,6 +139,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!token) {
         setUser(null)
         setIsUserLoading(false)
+        return
+      }
+
+      const storedUser = getStoredAuthUser()
+      if (storedUser && usersMatch(storedUser, userRef.current)) {
         return
       }
 

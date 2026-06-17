@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { ChevronDown, User, X } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 
 import { useAuth } from "@/auth/useAuth";
 import { useLearningNav } from "@/features/learning/LearningNavContext";
@@ -10,7 +10,6 @@ import {
   SPECIALTY_AUDIO_HREF,
   type SpecialtySlug,
 } from "@/data/specialtyResources";
-import { PRICING_PLANS_PATH } from "@/lib/paths";
 import { getUserAvatarSrc } from "@/lib/userAvatar";
 import { HeaderAvatar } from "@/components/ui/HeaderAvatar";
 import { USER_ACCOUNT_TABS, userAccountHref } from "@/lib/userAccountNav";
@@ -200,7 +199,7 @@ type FrontendMobileNavProps = {
 export function FrontendMobileNav({ open, onClose }: FrontendMobileNavProps) {
   const location = useLocation();
   const mobileNavItems = useMobileNavItems();
-  const { isAuthenticated, logout, user } = useAuth();
+  const { logout, user } = useAuth();
   const displayName =
     user?.name?.trim() || user?.email?.split("@")[0]?.trim() || "";
   const avatarSrc = getUserAvatarSrc(user);

@@ -8,7 +8,6 @@ import {
   type SpecialtySlug,
 } from "@/data/specialtyResources";
 import {
-  fetchMockExamResults,
   fetchMockExamSets,
   startMockTest,
   type MockExamSet,
@@ -16,17 +15,16 @@ import {
 import { container } from "@/lib/container";
 import { cn } from "@/lib/utils";
 
-function MockExamCard({ exam, onStart }: { exam: MockExamSet; onStart: (id: number) => void }) {
-  const { data: results = [] } = useQuery({
-    queryKey: ["mock-exam", "results", exam.id],
-    queryFn: () => fetchMockExamResults(exam.id),
-  });
-
-  const completedAttempts = results.filter((r) => r.status === "completed").length;
-  const bestScore = results.reduce(
-    (best, r) => Math.max(best, r.score_percentage ?? 0),
-    0,
-  );
+function MockExamCard({
+  exam,
+  onStart,
+}: {
+  exam: MockExamSet;
+  onStart: (id: number) => void;
+}) {
+  const completedAttempts = exam.attempts_used;
+  const bestScore = exam.best_score_percentage;
+  const attemptsExhausted = !exam.can_start && exam.attempts_remaining <= 0;
 
   return (
     <article className="flex flex-col rounded-md border border-[#e5e7eb] bg-white p-6 shadow-sm">
@@ -43,11 +41,11 @@ function MockExamCard({ exam, onStart }: { exam: MockExamSet; onStart: (id: numb
       </p>
       <button
         type="button"
-        disabled={completedAttempts >= 3}
+        disabled={attemptsExhausted}
         onClick={() => onStart(exam.id)}
         className="mt-5 rounded-lg bg-[#FFC107] px-4 py-2.5 font-sans text-sm font-semibold text-black transition hover:bg-[#e6ac00] disabled:cursor-not-allowed disabled:opacity-45"
       >
-        {completedAttempts >= 3 ? "All attempts used" : "Start mock exam"}
+        {attemptsExhausted ? "All attempts used" : "Start mock exam"}
       </button>
     </article>
   );
@@ -61,6 +59,7 @@ export default function MockExamsPage() {
   const { data: exams = [], isLoading } = useQuery({
     queryKey: ["mock-exams", "sets"],
     queryFn: () => fetchMockExamSets(),
+    retry: false,
   });
 
   const startMutation = useMutation({
