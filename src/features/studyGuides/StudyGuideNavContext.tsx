@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useMemo, type ReactNode } from 
 
 import type { SpecialtySlug } from "@/data/specialtyResources";
 import { specialtyForContentCategory } from "@/features/studyGuides/specialtyCategory";
+import { reverseNavChildren } from "@/lib/navDeckChildren";
 import type { PublicStudyGuide } from "@/features/studyGuides/types";
 import {
   studyGuidesToNavChildren,
@@ -41,7 +42,7 @@ export function StudyGuideNavProvider({ children }: { children: ReactNode }) {
   const getNavChildren = useCallback(
     (specialty: SpecialtySlug) => {
       const list = guidesBySpecialty[specialty] ?? [];
-      return studyGuidesToNavChildren(list);
+      return reverseNavChildren(studyGuidesToNavChildren(list));
     },
     [guidesBySpecialty],
   );

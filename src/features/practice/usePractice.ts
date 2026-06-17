@@ -4,7 +4,7 @@ import type { SpecialtySlug } from "@/data/specialtyResources";
 import { resolveIdForDeckSlug } from "@/lib/deckResolver";
 
 import { toPracticeQuestion } from "./mapQuestion";
-import { fetchPracticeQuestionSets, fetchQuestionsForSet, sortPracticeQuestions } from "./practiceApi";
+import { fetchPracticeQuestionSets, fetchQuestionsForSet } from "./practiceApi";
 
 export const practiceQueryKeys = {
   sets: (specialty: SpecialtySlug) => ["practice", "sets", specialty] as const,
@@ -25,7 +25,7 @@ export function usePracticeForDeck(specialty: SpecialtySlug, deckSlug: string | 
   });
 
   const questionSet = (setsQuery.data ?? []).find((s) => s.id === setId);
-  const questions = sortPracticeQuestions(questionsQuery.data ?? []).map(toPracticeQuestion);
+  const questions = (questionsQuery.data ?? []).map(toPracticeQuestion);
 
   return {
     setsQuery,
