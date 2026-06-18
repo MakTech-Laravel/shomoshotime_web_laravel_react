@@ -1,4 +1,4 @@
-﻿import { isAxiosError } from "axios";
+import { isAxiosError } from "axios";
 
 import { api } from "@/api/client";
 import { unwrapLaravelData, unwrapLaravelPaginatedData } from "@/api/laravelResponse";

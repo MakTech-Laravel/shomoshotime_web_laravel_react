@@ -1,4 +1,4 @@
-﻿import { useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 
 import type { SpecialtySlug } from "@/data/specialtyResources";
 import { resolveIdForDeckSlug } from "@/lib/deckResolver";
