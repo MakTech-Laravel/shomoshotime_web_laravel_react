@@ -72,10 +72,12 @@ export function AudioPlayer({ tracks, className }: AudioPlayerProps) {
     setPlaybackError(null);
   }, [activeIndex]);
 
-  // Load duration for current track
+  // Sync duration when the current track source changes (browser loads via src + preload)
   useEffect(() => {
     const audio = audioRef.current;
-    if (!audio) return;
+    if (!audio || !currentTrack.src) return;
+
+    setPlaybackError(null);
 
     function sync() {
       if (audio && isFinite(audio.duration) && audio.duration > 0) {
@@ -83,16 +85,28 @@ export function AudioPlayer({ tracks, className }: AudioPlayerProps) {
       }
     }
 
+    function clearErrorOnReady() {
+      setPlaybackError(null);
+      setIsBuffering(false);
+    }
+
     audio.addEventListener("loadedmetadata", sync);
     audio.addEventListener("durationchange", sync);
+    audio.addEventListener("canplay", clearErrorOnReady);
     if (audio.readyState >= 1) sync();
-    else audio.load();
 
     return () => {
       audio.removeEventListener("loadedmetadata", sync);
       audio.removeEventListener("durationchange", sync);
+      audio.removeEventListener("canplay", clearErrorOnReady);
     };
   }, [currentTrack.src]);
+
+  function isBenignAudioError(audio: HTMLAudioElement): boolean {
+    const code = audio.error?.code;
+    // MEDIA_ERR_ABORTED — src change or interrupted metadata fetch; not a real failure
+    return code === MediaError.MEDIA_ERR_ABORTED;
+  }
 
   function togglePlay() {
     const audio = audioRef.current;
@@ -102,11 +116,16 @@ export function AudioPlayer({ tracks, className }: AudioPlayerProps) {
       setIsPlaying(false);
     } else {
       setPlaybackError(null);
-      audio.play().catch(() => {
-        setIsPlaying(false);
-        setPlaybackError("Unable to play this track. Try again.");
-      });
-      setIsPlaying(true);
+      void audio
+        .play()
+        .then(() => {
+          setIsPlaying(true);
+          setPlaybackError(null);
+        })
+        .catch(() => {
+          setIsPlaying(false);
+          setPlaybackError("Unable to play this track. Try again.");
+        });
     }
   }
 
@@ -151,7 +170,9 @@ export function AudioPlayer({ tracks, className }: AudioPlayerProps) {
         onWaiting={() => setIsBuffering(true)}
         onCanPlay={() => setIsBuffering(false)}
         onPlaying={() => setIsBuffering(false)}
-        onError={() => {
+        onError={(e) => {
+          const audio = e.currentTarget;
+          if (isBenignAudioError(audio)) return;
           setIsPlaying(false);
           setIsBuffering(false);
           setPlaybackError("Unable to play this track. Try again.");
