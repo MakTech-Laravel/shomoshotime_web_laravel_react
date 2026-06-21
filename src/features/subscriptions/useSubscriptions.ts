@@ -1,9 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { createCheckoutSession } from "./checkoutApi";
+import {
+  cancelWebSubscription,
+  createSubscriptionCheckoutSession,
+  fetchActiveWebSubscription,
+} from "./checkoutApi";
 import { fetchPublicSubscriptionPlans } from "./publicPlansApi";
 import {
-  cancelSubscription,
   fetchSubscriptionCheck,
   fetchSubscriptionPlans,
 } from "./subscriptionsApi";
@@ -12,6 +15,7 @@ export const subscriptionQueryKeys = {
   check: ["subscription-check"] as const,
   plans: ["subscription-plans"] as const,
   publicPlans: ["public-subscription-plans"] as const,
+  activeWeb: ["active-web-subscription"] as const,
 };
 
 export function useSubscriptionCheck(options?: { enabled?: boolean }) {
@@ -41,12 +45,22 @@ export function usePublicSubscriptionPlans() {
   });
 }
 
-export function useCancelSubscription() {
+export function useActiveWebSubscription(options?: { enabled?: boolean }) {
+  return useQuery({
+    queryKey: subscriptionQueryKeys.activeWeb,
+    queryFn: fetchActiveWebSubscription,
+    enabled: options?.enabled ?? true,
+    retry: 1,
+  });
+}
+
+export function useCancelWebSubscription() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: cancelSubscription,
+    mutationFn: cancelWebSubscription,
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: subscriptionQueryKeys.check });
+      void queryClient.invalidateQueries({ queryKey: subscriptionQueryKeys.activeWeb });
     },
   });
 }
@@ -54,7 +68,7 @@ export function useCancelSubscription() {
 export function useCreateCheckout() {
   return useMutation({
     mutationFn: async (subscriptionId: number) => {
-      const result = await createCheckoutSession(subscriptionId);
+      const result = await createSubscriptionCheckoutSession(subscriptionId);
       window.location.assign(result.checkout_url);
       return result;
     },
