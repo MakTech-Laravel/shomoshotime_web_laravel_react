@@ -15,7 +15,7 @@ vi.mock("@/api/client", () => ({
 import { api } from "@/api/client";
 
 describe("fetchAudioGuidesBySpecialty", () => {
-  it("returns normalized guides with playable file urls", async () => {
+  it("returns normalized guides with playable file urls in reverse CMS order", async () => {
     vi.mocked(api.get).mockResolvedValue({
       data: {
         success: true,
@@ -23,13 +23,25 @@ describe("fetchAudioGuidesBySpecialty", () => {
           {
             id: 5,
             sort_order: 1,
-            title: "Fundamentals Track",
+            title: "First in CMS",
             subtitle: "58:03",
             display_duration: "58:03",
             category: "SPI",
             specialty: "spi",
-            slug: "fundamentals-track-5",
+            slug: "first-track-5",
             file_url: "https://api.example.com/api/v1/content/audio-guides/5/file",
+            has_file: true,
+          },
+          {
+            id: 6,
+            sort_order: 2,
+            title: "Last in CMS",
+            subtitle: "44:41",
+            display_duration: "44:41",
+            category: "SPI",
+            specialty: "spi",
+            slug: "last-track-6",
+            file_url: "https://api.example.com/api/v1/content/audio-guides/6/file",
             has_file: true,
           },
         ],
@@ -37,12 +49,13 @@ describe("fetchAudioGuidesBySpecialty", () => {
     });
 
     const guides = await fetchAudioGuidesBySpecialty("spi");
-    expect(guides).toHaveLength(1);
-    expect(guides[0]?.title).toBe("Fundamentals Track");
+    expect(guides).toHaveLength(2);
 
     const tracks = audioGuidesToPlayerTracks(guides, "spi");
-    expect(tracks[0]?.src).toContain("/content/audio-guides/5/file");
-    expect(tracks[0]?.displayDuration).toBe("58:03");
+    expect(tracks[0]?.title).toBe("Last in CMS");
+    expect(tracks[0]?.src).toContain("/content/audio-guides/6/file");
+    expect(tracks[1]?.title).toBe("First in CMS");
+    expect(tracks[1]?.displayDuration).toBe("58:03");
   });
 
   it("throws on request failure", async () => {

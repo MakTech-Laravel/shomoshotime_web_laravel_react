@@ -60,7 +60,7 @@ export function SpecialtyStaticAudioPage() {
       return apiTracks;
     }
     if (slug === "spi") {
-      return SPI_AUDIO_TRACKS;
+      return [...SPI_AUDIO_TRACKS].reverse();
     }
     return [];
   }, [apiTracks, slug]);

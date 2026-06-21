@@ -70,7 +70,7 @@ export function audioGuidesToPlayerTracks(
 ): AudioPlayerTrack[] {
   const album = `Audio (${SPECIALTY_DISPLAY_LABELS[specialty]})`;
 
-  return [...guides]
+  const tracks = [...guides]
     .sort((a, b) => a.sort_order - b.sort_order || a.id - b.id)
     .map((guide) => ({
       src: guide.file_url,
@@ -79,4 +79,6 @@ export function audioGuidesToPlayerTracks(
       album,
       displayDuration: guide.display_duration || undefined,
     }));
+
+  return [...tracks].reverse();
 }
