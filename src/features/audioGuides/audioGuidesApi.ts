@@ -57,15 +57,11 @@ function normalizeAudioGuideList(body: unknown): PublicAudioGuide[] {
 export async function fetchAudioGuidesBySpecialty(
   specialty: SpecialtySlug,
 ): Promise<PublicAudioGuide[]> {
-  try {
-    const res = await api.get(AUDIO_GUIDES_PATH, {
-      params: { specialty },
-      skipAuthRedirect: true,
-    });
-    return normalizeAudioGuideList(res.data);
-  } catch {
-    return [];
-  }
+  const res = await api.get(AUDIO_GUIDES_PATH, {
+    params: { specialty },
+    skipAuthRedirect: true,
+  });
+  return normalizeAudioGuideList(res.data);
 }
 
 export function audioGuidesToPlayerTracks(

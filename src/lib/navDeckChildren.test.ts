@@ -18,7 +18,21 @@ describe("reverseNavChildren", () => {
 });
 
 describe("apiItemsToNavChildren", () => {
-  it("returns nav children in reversed sort_order for web display", () => {
+  it("keeps SPI legacy slugs paired with ASC-sorted items after reversal", () => {
+    const children = apiItemsToNavChildren(
+      [
+        { id: 10, sort_order: 0, title: "Basic Metrics" },
+        { id: 20, sort_order: 5, title: "Fundamentals" },
+      ],
+      { specialty: "spi" },
+    );
+
+    expect(children).toHaveLength(2);
+    expect(children[0]).toEqual({ label: "Fundamentals", slug: "transducers" });
+    expect(children[1]).toEqual({ label: "Basic Metrics", slug: "fundamentals" });
+  });
+
+  it("returns nav children in reversed sort_order for web display by default", () => {
     const children = apiItemsToNavChildren(
       [
         { id: 1, sort_order: 1, title: "Alpha" },
@@ -32,17 +46,15 @@ describe("apiItemsToNavChildren", () => {
     expect(children[0]?.slug).toBe("deck-3");
   });
 
-  it("keeps SPI legacy slugs paired with ASC-sorted items after reversal", () => {
+  it("keeps forward order when reverse is false (abdominal practice nav)", () => {
     const children = apiItemsToNavChildren(
       [
-        { id: 10, sort_order: 0, title: "Basic Metrics" },
-        { id: 20, sort_order: 5, title: "Fundamentals" },
+        { id: 1, sort_order: 1, title: "Liver" },
+        { id: 2, sort_order: 2, title: "Biliary" },
       ],
-      { specialty: "spi" },
+      { specialty: "abdominal", reverse: false },
     );
 
-    expect(children).toHaveLength(2);
-    expect(children[0]).toEqual({ label: "Fundamentals", slug: "transducers" });
-    expect(children[1]).toEqual({ label: "Basic Metrics", slug: "fundamentals" });
+    expect(children.map((c) => c.label)).toEqual(["Liver", "Biliary"]);
   });
 });

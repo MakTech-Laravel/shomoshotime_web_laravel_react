@@ -39,7 +39,7 @@ function slugForItem(
 /** Map API content/question sets to nav children. SPI keeps legacy slugs; other specialties use deck-{id}. */
 export function apiItemsToNavChildren(
   items: SortableTitle[],
-  options?: { specialty?: SpecialtySlug },
+  options?: { specialty?: SpecialtySlug; reverse?: boolean },
 ): { label: string; slug: string }[] {
   const sorted = sortByOrder(items);
   if (sorted.length === 0) return [];
@@ -68,7 +68,7 @@ export function apiItemsToNavChildren(
     });
   }
 
-  return reverseNavChildren(result);
+  return options?.reverse === false ? result : reverseNavChildren(result);
 }
 
 export function firstDeckSlugForSets(

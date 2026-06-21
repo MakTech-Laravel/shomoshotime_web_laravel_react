@@ -50,8 +50,8 @@ function normalizeMockSet(raw: unknown): MockExamSet | null {
       : null;
 
   const attemptsUsed = Number(mockTest?.total_attempts ?? 0);
-  const attemptsRemaining = Number(mockTest?.remaining_attempts ?? 3);
-  const canStart = mockTest?.can_start !== false && attemptsRemaining > 0;
+  const attemptsRemaining = Number(mockTest?.remaining_attempts ?? 999);
+  const canStart = mockTest?.can_start !== false;
 
   return {
     id,
@@ -63,7 +63,7 @@ function normalizeMockSet(raw: unknown): MockExamSet | null {
     status_label: String(o.status_label ?? ""),
     total_questions: Number(o.total_questions ?? 0),
     attempts_used: Number.isFinite(attemptsUsed) ? attemptsUsed : 0,
-    attempts_remaining: Number.isFinite(attemptsRemaining) ? attemptsRemaining : 3,
+    attempts_remaining: Number.isFinite(attemptsRemaining) ? attemptsRemaining : 999,
     can_start: canStart,
     best_score_percentage: Number(mockTest?.best_percentage ?? 0),
   };

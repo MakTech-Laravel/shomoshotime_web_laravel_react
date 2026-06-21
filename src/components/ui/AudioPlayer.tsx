@@ -54,6 +54,8 @@ export function AudioPlayer({ tracks, className }: AudioPlayerProps) {
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(1);
   const [showPlaylist, setShowPlaylist] = useState(true);
+  const [isBuffering, setIsBuffering] = useState(false);
+  const [playbackError, setPlaybackError] = useState<string | null>(null);
 
   const currentTrack = tracks[activeIndex] ?? tracks[0];
   const isMulti = tracks.length > 1;
@@ -66,6 +68,8 @@ export function AudioPlayer({ tracks, className }: AudioPlayerProps) {
     setIsPlaying(false);
     setCurrentTime(0);
     setDuration(0);
+    setIsBuffering(false);
+    setPlaybackError(null);
   }, [activeIndex]);
 
   // Load duration for current track
@@ -97,7 +101,11 @@ export function AudioPlayer({ tracks, className }: AudioPlayerProps) {
       audio.pause();
       setIsPlaying(false);
     } else {
-      audio.play().catch(() => setIsPlaying(false));
+      setPlaybackError(null);
+      audio.play().catch(() => {
+        setIsPlaying(false);
+        setPlaybackError("Unable to play this track. Try again.");
+      });
       setIsPlaying(true);
     }
   }
@@ -140,6 +148,14 @@ export function AudioPlayer({ tracks, className }: AudioPlayerProps) {
         preload="metadata"
         onTimeUpdate={() => setCurrentTime(audioRef.current?.currentTime ?? 0)}
         onEnded={handleEnded}
+        onWaiting={() => setIsBuffering(true)}
+        onCanPlay={() => setIsBuffering(false)}
+        onPlaying={() => setIsBuffering(false)}
+        onError={() => {
+          setIsPlaying(false);
+          setIsBuffering(false);
+          setPlaybackError("Unable to play this track. Try again.");
+        }}
       />
 
       <div className="overflow-hidden rounded-sm border border-[#c8c8c8] bg-white">
@@ -210,6 +226,11 @@ export function AudioPlayer({ tracks, className }: AudioPlayerProps) {
               {currentTrack.album && (
                 <p className="mt-0.75 text-[13px] leading-tight text-gray-500 lg:mt-1 lg:text-[15px]">{currentTrack.album}</p>
               )}
+              {playbackError ? (
+                <p className="mt-2 text-[13px] text-[#c62828]">{playbackError}</p>
+              ) : isBuffering ? (
+                <p className="mt-2 text-[13px] text-[#666666]">Buffering…</p>
+              ) : null}
             </div>
 
             {/* Controls row */}

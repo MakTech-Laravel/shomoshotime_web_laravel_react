@@ -45,9 +45,9 @@ describe("fetchAudioGuidesBySpecialty", () => {
     expect(tracks[0]?.displayDuration).toBe("58:03");
   });
 
-  it("returns empty array on request failure", async () => {
+  it("throws on request failure", async () => {
     vi.mocked(api.get).mockRejectedValue(new Error("network"));
-    await expect(fetchAudioGuidesBySpecialty("vascular")).resolves.toEqual([]);
+    await expect(fetchAudioGuidesBySpecialty("vascular")).rejects.toThrow("network");
   });
 });
 

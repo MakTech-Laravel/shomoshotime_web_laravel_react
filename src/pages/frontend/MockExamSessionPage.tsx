@@ -53,7 +53,7 @@ export default function MockExamSessionPage() {
           {latestResult ? (
             <div className="mt-8 w-full max-w-md rounded-md border border-[#e5e7eb] bg-white p-8 text-center shadow-sm">
               <p className="font-sans text-base text-[#333333]">
-                Attempt {latestResult.attempt_number} of 3
+                Attempt {latestResult.attempt_number}
               </p>
               <p className="mt-4 font-heading text-4xl font-bold text-[#2E7D32]">
                 {latestResult.score_percentage != null

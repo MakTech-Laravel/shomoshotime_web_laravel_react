@@ -6,29 +6,44 @@ import { cn } from "@/lib/utils";
 
 const FAQ_ITEMS = [
   {
-    question: "What specialties does Sonographer Pal cover?",
+    question: "What is Sonographer Pal?",
     answer:
-      "We offer study materials for SPI (Ultrasound Physics), Abdomen, OB/GYN, and Vascular sonography — aligned with ARDMS®, ARRT®, and CCI® specialty examinations.",
+      "Sonographer Pal is an e-learning platform designed to help sonography students and professionals confidently prepare for credentialing exams. Our peer-reviewed content is created and vetted by registered sonographers and physicians, ensuring both clinical accuracy and educational integrity.",
   },
   {
-    question: "Do I need a subscription to access content?",
+    question: "Who creates the content on this platform?",
     answer:
-      "Most study guides, flashcards, practice questions, and mock exams require an active subscription. You can view pricing and sign up on our Plans page.",
+      "All content is developed and reviewed by experienced, credentialed professionals—including registered sonographers, educators, and physicians—to provide you with trustworthy, exam-focused material.",
   },
   {
-    question: "Can I use Sonographer Pal on mobile?",
+    question: "How long will I have access to the content?",
     answer:
-      "Yes. The Sonographer Pal mobile app is available for iOS and Android. Your subscription and progress sync with the web platform.",
+      "Access duration depends on the specific product or membership you purchase. Most subscriptions grant access for a set period (e.g., weekly, monthly, or annually), clearly indicated at checkout.",
   },
   {
-    question: "How often is content updated?",
+    question: "Can I share my login or materials with others?",
     answer:
-      "We regularly review and update study guides, flashcards, and practice questions to keep materials current and clinically relevant.",
+      "No. Your membership and access are for individual use only. Sharing logins or materials violates our terms of service and may result in revoked access without refund.",
   },
   {
-    question: "Who can I contact for support?",
+    question: "Are refunds available?",
     answer:
-      "Email us at info@sonographerpal.com or visit our Contact page. We typically respond within one business day.",
+      "All sales are final. Due to the digital nature of our content and instant access to study materials, we are unable to offer refunds or exchanges. We recommend reviewing product descriptions carefully before purchasing.",
+  },
+  {
+    question: "Do you offer updates to content?",
+    answer:
+      "Yes! Our team regularly reviews and updates content to reflect current guidelines, best practices, and credentialing exam changes. Active members automatically receive updated material during their access period.",
+  },
+  {
+    question: "Is this platform affiliated with ARDMS®, ARRT® or CCI®?",
+    answer:
+      "Sonographer Pal is an independent educational platform and is not affiliated with credentialing bodies like ARDMS®, ARRT® or CCI®. However, our materials are designed to align with their exam objectives and current clinical standards.",
+  },
+  {
+    question: "Will Sonographer Pal guarantee that I pass my board exams?",
+    answer:
+      "While our content is designed to help you prepare thoroughly and confidently, Sonographer Pal cannot guarantee exam results. Success depends on multiple factors, including your personal study habits, comprehension, and clinical experience. Our goal is to provide trusted, expert-reviewed resources to support your journey—but exam performance is ultimately up to you.",
   },
 ];
 
