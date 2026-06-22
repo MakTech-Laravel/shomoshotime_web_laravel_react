@@ -29,3 +29,12 @@ export function pricingGridClass(count: number): string {
 export function planRegisterSlug(duration: string): string {
   return duration.trim().toLowerCase().replace(/\s+/g, "-");
 }
+
+/** Display plan price without erroneous rounding (e.g. 9.99 stays 9.99, not 10). */
+export function formatPlanPrice(price: number): string {
+  if (!Number.isFinite(price)) return "0";
+  const normalized = Math.round(price * 100) / 100;
+  const cents = Math.round(normalized * 100) % 100;
+  if (cents === 0) return String(Math.trunc(normalized));
+  return normalized.toFixed(2);
+}
