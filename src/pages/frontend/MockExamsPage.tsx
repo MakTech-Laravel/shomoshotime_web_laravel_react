@@ -5,15 +5,17 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   SPECIALTY_DISPLAY_LABELS,
   SPECIALTY_SLUGS,
-  type SpecialtySlug,
 } from "@/data/specialtyResources";
 import {
   fetchMockExamSets,
   startMockTest,
   type MockExamSet,
 } from "@/features/mockExams/mockExamsApi";
+import {
+  filterMockExamsByTab,
+  type MockExamFilterKey,
+} from "@/features/mockExams/mockExamFilters";
 import { container } from "@/lib/container";
-import { categoryMatchesSpecialty } from "@/lib/specialtyCategory";
 import { cn } from "@/lib/utils";
 
 function MockExamCardSkeleton() {
@@ -78,9 +80,7 @@ function MockExamCard({
 
 export default function MockExamsPage() {
   const navigate = useNavigate();
-  const [activeSpecialty, setActiveSpecialty] = useState<SpecialtySlug | "all">(
-    "all",
-  );
+  const [activeSpecialty, setActiveSpecialty] = useState<MockExamFilterKey>("arrt");
   const [startError, setStartError] = useState<string | null>(null);
   const [startingId, setStartingId] = useState<number | null>(null);
 
@@ -111,22 +111,7 @@ export default function MockExamsPage() {
     document.title = "Mock Exams | Sonographer Pal";
   }, []);
 
-  const filtered =
-    activeSpecialty === "all"
-      ? exams
-      : exams.filter((e) =>
-          categoryMatchesSpecialty(e.category, activeSpecialty),
-        );
-
-  const grouped = SPECIALTY_SLUGS.reduce<Record<string, MockExamSet[]>>(
-    (acc, slug) => {
-      acc[slug] = exams.filter((e) =>
-        categoryMatchesSpecialty(e.category, slug),
-      );
-      return acc;
-    },
-    {},
-  );
+  const visibleExams = filterMockExamsByTab(exams, activeSpecialty);
 
   function handleStart(id: number) {
     setStartError(null);
@@ -159,10 +144,10 @@ export default function MockExamsPage() {
         <div className="mt-8 flex flex-wrap justify-center gap-2">
           <button
             type="button"
-            onClick={() => setActiveSpecialty("all")}
+            onClick={() => setActiveSpecialty("arrt")}
             className={cn(
               "rounded-full border px-4 py-1.5 font-sans text-sm font-medium",
-              activeSpecialty === "all"
+              activeSpecialty === "arrt"
                 ? "border-[#b8860b] bg-[#FFC107] text-black"
                 : "border-[#d0d0d0] bg-white text-[#333333]",
             )}
@@ -211,36 +196,21 @@ export default function MockExamsPage() {
               <MockExamCardSkeleton key={i} />
             ))}
           </div>
-        ) : activeSpecialty === "all" ? (
-          <div className="mt-10 space-y-12">
-            {SPECIALTY_SLUGS.map((slug) =>
-              grouped[slug]?.length ? (
-                <section key={slug}>
-                  <h2 className="mb-4 font-heading text-xl font-bold text-black">
-                    {SPECIALTY_DISPLAY_LABELS[slug]}
-                  </h2>
-                  <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                    {grouped[slug].map((exam) => (
-                      <MockExamCard key={exam.id} exam={exam} {...cardProps} />
-                    ))}
-                  </div>
-                </section>
-              ) : null,
-            )}
-            {exams.length === 0 ? (
-              <p className="text-center font-sans text-base text-[#666666]">
-                No mock exams are available yet.
-              </p>
-            ) : null}
-          </div>
         ) : (
-          <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {filtered.map((exam) => (
-              <MockExamCard key={exam.id} exam={exam} {...cardProps} />
-            ))}
-            {filtered.length === 0 ? (
-              <p className="col-span-full text-center font-sans text-base text-[#666666]">
-                No mock exams for this specialty yet.
+          <div className="mt-10">
+            {/* {activeSpecialty === "arrt" ? (
+              <h2 className="mb-4 font-heading text-xl font-bold text-black">ARRT</h2>
+            ) : null} */}
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {visibleExams.map((exam) => (
+                <MockExamCard key={exam.id} exam={exam} {...cardProps} />
+              ))}
+            </div>
+            {visibleExams.length === 0 ? (
+              <p className="mt-6 text-center font-sans text-base text-[#666666]">
+                {activeSpecialty === "arrt"
+                  ? "No ARRT mock exams available yet."
+                  : "No mock exams for this specialty yet."}
               </p>
             ) : null}
           </div>
