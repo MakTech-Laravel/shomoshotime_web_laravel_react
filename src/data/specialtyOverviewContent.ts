@@ -204,7 +204,7 @@ const VASCULAR_OVERVIEW: SpecialtyOverviewContent = {
     "Board-style practice questions",
   ],
   infographic: [
-    { label: "Study Guides (Text & Audio)", value: "8 Guides" },
+    { label: "Study Guides (Text & Audio)", value: "6 Guides" },
     { label: "Flashcards", value: "580 Cards" },
     { label: "Practice Questions", value: "500 Questions" },
     { label: "Topics Covered", value: "Vascular Anatomy, Pathology, Physiologic Exams, Procedures, Safety & QA" },

@@ -47,12 +47,14 @@ function MockExamCard({
 
   return (
     <article className="flex flex-col rounded-md border border-[#e5e7eb] bg-white p-6 shadow-sm">
-      <h3 className="font-heading text-lg font-bold text-black">{exam.title}</h3>
-      {exam.subtitle ? (
+      <h3 className="font-heading text-lg font-bold text-black">
+        {exam.title}
+      </h3>
+      {/* {exam.subtitle ? (
         <p className="mt-1 font-sans text-sm text-[#666666]">{exam.subtitle}</p>
-      ) : null}
+      ) : null} */}
       <p className="mt-3 font-sans text-sm text-[#333333]">
-        {exam.total_questions} questions · {exam.status_label || "Mock exam"}
+        {exam.total_questions} questions {/* · {exam.status_label || "Mock exam"} */}
       </p>
       <p className="mt-1 font-sans text-xs text-[#888888]">
         Attempts completed: {completedAttempts}
@@ -64,7 +66,11 @@ function MockExamCard({
         onClick={() => (inProgress ? onResume(exam.id) : onStart(exam.id))}
         className="mt-5 rounded-lg bg-[#FFC107] px-4 py-2.5 font-sans text-sm font-semibold text-black transition hover:bg-[#e6ac00] disabled:cursor-not-allowed disabled:opacity-45"
       >
-        {isPending ? "Starting…" : inProgress ? "Resume mock exam" : "Start mock exam"}
+        {isPending
+          ? "Starting…"
+          : inProgress
+            ? "Resume mock exam"
+            : "Start mock exam"}
       </button>
     </article>
   );
@@ -72,7 +78,9 @@ function MockExamCard({
 
 export default function MockExamsPage() {
   const navigate = useNavigate();
-  const [activeSpecialty, setActiveSpecialty] = useState<SpecialtySlug | "all">("all");
+  const [activeSpecialty, setActiveSpecialty] = useState<SpecialtySlug | "all">(
+    "all",
+  );
   const [startError, setStartError] = useState<string | null>(null);
   const [startingId, setStartingId] = useState<number | null>(null);
 
@@ -106,12 +114,19 @@ export default function MockExamsPage() {
   const filtered =
     activeSpecialty === "all"
       ? exams
-      : exams.filter((e) => categoryMatchesSpecialty(e.category, activeSpecialty));
+      : exams.filter((e) =>
+          categoryMatchesSpecialty(e.category, activeSpecialty),
+        );
 
-  const grouped = SPECIALTY_SLUGS.reduce<Record<string, MockExamSet[]>>((acc, slug) => {
-    acc[slug] = exams.filter((e) => categoryMatchesSpecialty(e.category, slug));
-    return acc;
-  }, {});
+  const grouped = SPECIALTY_SLUGS.reduce<Record<string, MockExamSet[]>>(
+    (acc, slug) => {
+      acc[slug] = exams.filter((e) =>
+        categoryMatchesSpecialty(e.category, slug),
+      );
+      return acc;
+    },
+    {},
+  );
 
   function handleStart(id: number) {
     setStartError(null);
@@ -138,7 +153,7 @@ export default function MockExamsPage() {
           Mock Exams
         </h1>
         <p className="mx-auto mt-4 max-w-2xl text-center font-sans text-base text-[#444444]">
-          Timed practice exams to simulate board-style testing.
+          Graded mock exams for each specialty
         </p>
 
         <div className="mt-8 flex flex-wrap justify-center gap-2">
@@ -172,7 +187,9 @@ export default function MockExamsPage() {
         </div>
 
         {startError ? (
-          <p className="mt-6 text-center font-sans text-sm text-[#c62828]">{startError}</p>
+          <p className="mt-6 text-center font-sans text-sm text-[#c62828]">
+            {startError}
+          </p>
         ) : null}
 
         {isError ? (
