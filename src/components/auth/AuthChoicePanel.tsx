@@ -1,9 +1,9 @@
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { X } from "lucide-react";
 
-import { FacebookIcon } from "@/components/auth/AuthSocialIcons";
+// import { FacebookIcon } from "@/components/auth/AuthSocialIcons";
 import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
-import { env } from "@/config/env";
+// import { env } from "@/config/env";
 import { cn } from "@/lib/utils";
 
 type AuthChoiceMode = "login" | "signup";
@@ -13,10 +13,10 @@ type AuthChoicePanelProps = {
   className?: string;
 };
 
-function getFacebookAuthUrl() {
-  const origin = env.apiBaseUrl.replace(/\/api\/v\d+\/?$/, "");
-  return `${origin}/auth/facebook/redirect`;
-}
+// function getFacebookAuthUrl() {
+//   const origin = env.apiBaseUrl.replace(/\/api\/v\d+\/?$/, "");
+//   return `${origin}/auth/facebook/redirect`;
+// }
 
 const copy = {
   login: {
@@ -44,8 +44,8 @@ const copy = {
 const socialBtnClass =
   "relative flex h-[52px] w-full items-center justify-center rounded-none border border-[#d1d1d1] bg-white px-4 font-montserrat text-[15px] font-normal text-[#333333] transition-colors hover:bg-[#fafafa]";
 
-const facebookBtnClass =
-  "relative flex h-[52px] w-full items-center justify-center rounded-none bg-[#1877F2] px-4 font-montserrat text-[15px] font-normal text-white transition-colors hover:bg-[#166fe0]";
+// const facebookBtnClass =
+//   "relative flex h-[52px] w-full items-center justify-center rounded-none bg-[#1877F2] px-4 font-montserrat text-[15px] font-normal text-white transition-colors hover:bg-[#166fe0]";
 
 const emailBtnClass =
   "flex h-[52px] w-full items-center justify-center rounded-none border border-[#d1d1d1] bg-white px-4 font-montserrat text-[15px] font-normal text-[#333333] transition-colors hover:bg-[#fafafa]";
@@ -57,9 +57,9 @@ export function AuthChoicePanel({ mode, className }: AuthChoicePanelProps) {
   const query = searchParams.toString();
   const emailPath = query ? `${text.emailTo}?${query}` : text.emailTo;
 
-  function handleFacebookLogin() {
-    window.location.href = getFacebookAuthUrl();
-  }
+  // function handleFacebookLogin() {
+  //   window.location.href = getFacebookAuthUrl();
+  // }
 
   return (
     <div
