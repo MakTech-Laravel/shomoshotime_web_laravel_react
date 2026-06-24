@@ -92,14 +92,14 @@ export function AuthChoicePanel({ mode, className }: AuthChoicePanelProps) {
         <div className="mt-10 flex flex-col gap-4">
           <GoogleSignInButton label={text.google} className={socialBtnClass} />
 
-          <button
+          {/* <button
             type="button"
             className={facebookBtnClass}
             onClick={handleFacebookLogin}
           >
             <FacebookIcon className="absolute left-4 size-5 text-white" />
             {text.facebook}
-          </button>
+          </button> */}
 
           <div className="flex items-center gap-3 py-1">
             <span className="h-px flex-1 bg-[#d1d1d1]" aria-hidden />
