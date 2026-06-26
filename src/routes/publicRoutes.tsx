@@ -48,7 +48,6 @@ export const publicRoutes: RouteObject = {
     { path: "/vascular", element: suspensePage(SpecialtyLandingPage) },
     { path: "/ob-gyn", element: suspensePage(SpecialtyLandingPage) },
     { path: "/abdominal", element: suspensePage(SpecialtyLandingPage) },
-    { path: "/audio/:specialty", element: suspensePage(SpecialtyStaticAudioPage) },
     {
       element: (
         <ProtectedRoute forceAuth loginPath="/login/email" />
@@ -69,6 +68,7 @@ export const publicRoutes: RouteObject = {
       children: [
         { path: "/mock-exams", element: suspensePage(MockExamsPage) },
         { path: "/mock-exams/:setId", element: suspensePage(MockExamSessionPage) },
+        { path: "/audio/:specialty", element: suspensePage(SpecialtyStaticAudioPage) },
         { path: "/:specialty/study-guides/:section", element: suspensePage(StudyGuideViewerPage) },
         { path: "/:specialty/audio", element: suspensePage(SpecialtyAudioPage) },
         { path: "/:specialty/flashcards", element: suspensePage(SpecialtyFlashcardsPage) },
