@@ -1,15 +1,14 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { ChevronDown } from "lucide-react";
 import toast from "react-hot-toast";
 import { useQueryClient } from "@tanstack/react-query";
 
 import { useAuth } from "@/auth/useAuth";
-import { fetchSubscriptionCheckoutStatus } from "@/features/subscriptions/checkoutApi";
+import { fetchCheckoutSessionStatus } from "@/features/subscriptions/checkoutApi";
 import {
   subscriptionQueryKeys,
-  useActiveWebSubscription,
-  useCancelWebSubscription,
+  useCancelSubscription,
   useSubscriptionCheck,
 } from "@/features/subscriptions/useSubscriptions";
 import { cn } from "@/lib/utils";
@@ -23,24 +22,21 @@ export function SubscriptionsPanel() {
   const { data: isPremium, isLoading: checkLoading } = useSubscriptionCheck({
     enabled: Boolean(user),
   });
-  const { data: webSubscription, isLoading: activeLoading } = useActiveWebSubscription({
-    enabled: Boolean(user) && (isPremium === true || user?.is_premium === true),
-  });
-  const cancelMutation = useCancelWebSubscription();
+  const cancelMutation = useCancelSubscription();
 
   const active = isPremium === true || user?.is_premium === true;
 
-  const subscription = webSubscription ?? {
-    planName: "Premium",
-    statusLabel: "Active subscription",
-    status: "Active" as const,
-    price: "—",
-    paymentMethod: "Subscription",
-    startDate: "—",
-    renewsAt: "—",
-    cancelAtPeriodEnd: false,
-    billingSource: null,
-  };
+  const subscription = useMemo(
+    () => ({
+      planName: "Premium",
+      statusLabel: "Valid until canceled",
+      status: "Active" as const,
+      price: "—",
+      paymentMethod: "Subscription",
+      startDate: "—",
+    }),
+    [],
+  );
 
   useEffect(() => {
     if (checkoutHandled.current) return;
@@ -60,7 +56,7 @@ export function SubscriptionsPanel() {
       if (sessionId) {
         for (let attempt = 0; attempt < 8; attempt += 1) {
           try {
-            const status = await fetchSubscriptionCheckoutStatus(sessionId);
+            const status = await fetchCheckoutSessionStatus(sessionId);
             if (status.fulfilled || status.payment_status === "paid") {
               break;
             }
@@ -72,7 +68,6 @@ export function SubscriptionsPanel() {
       }
 
       await queryClient.invalidateQueries({ queryKey: subscriptionQueryKeys.check });
-      await queryClient.invalidateQueries({ queryKey: subscriptionQueryKeys.activeWeb });
       await queryClient.invalidateQueries({ queryKey: subscriptionQueryKeys.publicPlans });
     }
 
@@ -81,20 +76,13 @@ export function SubscriptionsPanel() {
 
   async function handleCancel() {
     try {
-      const result = await cancelMutation.mutateAsync();
-      toast.success(
-        result.ends_at
-          ? `Subscription will end on ${result.ends_at}.`
-          : "Subscription will cancel at the end of your billing period.",
-      );
+      await cancelMutation.mutateAsync();
+      toast.success("Subscription cancelled.");
       setExpanded(false);
     } catch {
       toast.error("Unable to cancel subscription. Please try again.");
     }
   }
-
-  const showCancel =
-    active && webSubscription?.billingSource === "stripe_recurring" && !webSubscription.cancelAtPeriodEnd;
 
   return (
     <section className="mt-8 sm:mt-9">
@@ -105,7 +93,7 @@ export function SubscriptionsPanel() {
         View and manage the subscriptions you&apos;ve purchased.
       </p>
 
-      {checkLoading || (active && activeLoading) ? (
+      {checkLoading ? (
         <div className="mt-7 border-t border-[#e0e0e0]">
           <p className="py-10 text-center font-montserrat text-[15px] font-normal text-[#9a9a9a]">
             Loading…
@@ -150,14 +138,7 @@ export function SubscriptionsPanel() {
                   aria-controls="subscription-details"
                   className="inline-flex items-center gap-2 rounded-sm transition-opacity hover:opacity-80"
                 >
-                  <span
-                    className={cn(
-                      "inline-flex rounded px-2.5 py-0.5 font-montserrat text-[14px] font-semibold leading-snug",
-                      subscription.status === "Cancelling"
-                        ? "bg-[#fff3e0] text-[#e65100]"
-                        : "bg-[#e8f5e9] text-[#2e7d32]",
-                    )}
-                  >
+                  <span className="inline-flex rounded bg-[#e8f5e9] px-2.5 py-0.5 font-montserrat text-[14px] font-semibold leading-snug text-[#2e7d32]">
                     {subscription.status}
                   </span>
                   <ChevronDown
@@ -180,22 +161,18 @@ export function SubscriptionsPanel() {
                 <div className="space-y-1.5 font-montserrat text-[15px] font-normal text-[#757575] sm:text-base">
                   <p>{subscription.price}</p>
                   <p>{subscription.paymentMethod}</p>
-                  {showCancel ? (
-                    <button
-                      type="button"
-                      disabled={cancelMutation.isPending}
-                      onClick={() => void handleCancel()}
-                      className="mt-4 block font-montserrat text-[15px] font-normal text-black underline underline-offset-2 transition hover:text-[#333] disabled:opacity-50"
-                    >
-                      {cancelMutation.isPending ? "Cancelling…" : "Cancel Subscription"}
-                    </button>
-                  ) : null}
+                  <button
+                    type="button"
+                    disabled={cancelMutation.isPending}
+                    onClick={() => void handleCancel()}
+                    className="mt-4 block font-montserrat text-[15px] font-normal text-black underline underline-offset-2 transition hover:text-[#333] disabled:opacity-50"
+                  >
+                    {cancelMutation.isPending ? "Cancelling…" : "Cancel Subscription"}
+                  </button>
                 </div>
 
                 <p className="font-montserrat text-[15px] font-normal text-[#757575] sm:text-center sm:text-base">
                   Start date: {subscription.startDate}
-                  <br />
-                  {subscription.cancelAtPeriodEnd ? "Ends" : "Renews"}: {subscription.renewsAt}
                 </p>
 
                 <div className="hidden sm:block" aria-hidden />

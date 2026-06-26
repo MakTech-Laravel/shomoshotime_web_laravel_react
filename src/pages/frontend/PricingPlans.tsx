@@ -151,7 +151,7 @@ export default function PricingPlans() {
             Explore Our Pricing Plans
           </h1>
           <p className="mx-auto mt-4 max-w-2xl text-center font-sans text-base font-normal leading-relaxed text-neutral-600 sm:text-lg">
-            Choose the plan that works best for you. Subscriptions renew automatically until cancelled.
+            Choose the plan that works best for you. All plans include full access to our comprehensive study materials.
           </p>
 
           {isPlansLoading ? (
