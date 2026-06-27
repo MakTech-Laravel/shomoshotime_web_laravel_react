@@ -94,7 +94,10 @@ export default function StudyGuideViewerPage() {
   }
 
   return (
-    <div className="flex h-[calc(100dvh-6.75rem)] flex-col bg-[#faf3f0] py-3 font-montserrat sm:h-[calc(100dvh-7rem)] sm:py-5 lg:py-6">
+    <div
+      className="flex h-[calc(100dvh-6.75rem)] flex-col bg-[#faf3f0] py-3 font-montserrat sm:h-[calc(100dvh-7rem)] sm:py-5 lg:py-6"
+      onContextMenu={(e) => e.preventDefault()}
+    >
       <div className={`${container} flex min-h-0 flex-1 flex-col`}>
         <h1 className="shrink-0 px-1 text-center text-lg font-normal leading-snug tracking-tight text-black break-words sm:text-[22px] lg:text-[28px]">
           {guide.title}

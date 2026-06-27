@@ -315,6 +315,7 @@ export function PdfStudyViewer({ pdfSources, className, contentId }: PdfStudyVie
         "pdf-study-viewer-root flex min-h-0 flex-col overflow-hidden rounded-md border border-[#d6d6d6] bg-white shadow-[0_4px_28px_rgba(0,0,0,0.09)]",
         className,
       )}
+      onContextMenu={(e) => e.preventDefault()}
     >
       <div ref={viewportRef} className="relative min-h-0 flex-1 bg-[#ebebeb]">
         {showThumbnails && pdfDoc && !showPlaceholder && (
