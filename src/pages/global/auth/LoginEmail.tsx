@@ -1,6 +1,7 @@
 import * as React from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 import { ArrowRight, Eye } from "lucide-react";
+import toast from "react-hot-toast";
 
 import { useAuth } from "@/auth/useAuth";
 import { Button } from "@/components/ui/button";
@@ -57,6 +58,15 @@ export default function LoginEmail() {
       if (err instanceof WixUseForgotPasswordError) {
         setWixTransferMessage(err.message);
         setWixTransferEmail(err.email);
+        toast(err.message, {
+          duration: 8000,
+          icon: "ℹ️",
+          style: {
+            background: "#fffbeb",
+            color: "#78350f",
+            border: "1px solid #fcd34d",
+          },
+        });
         return;
       }
       const errors = getAuthFieldErrors(err);
