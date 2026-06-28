@@ -5,6 +5,7 @@ import {
   firstValidationMessage,
   type ApiValidationErrorBody,
 } from '@/api/validationErrors'
+import { unwrapLaravelData } from '@/api/laravelResponse'
 
 export type FieldErrorMap = Record<string, string>
 
@@ -47,6 +48,14 @@ export function getAuthFieldErrors(error: unknown): FieldErrorMap {
 export function getAuthErrorMessage(error: unknown, fallback: string): string {
   if (axios.isAxiosError(error)) {
     const data = error.response?.data as ApiValidationErrorBody | undefined
+
+    const payload = unwrapLaravelData<{ action?: string }>(data)
+    if (payload?.action === 'PASSWORD_SETUP_REQUIRED') {
+      return (
+        data?.message ??
+        'Your account was migrated from our previous site. Please set a new password.'
+      )
+    }
 
     if (data?.message && data.success !== true) return data.message
 

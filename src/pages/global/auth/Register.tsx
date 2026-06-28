@@ -4,7 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { registerAndLoginUser } from "@/features/auth/service";
+import { registerAndLoginUser, resolvePostLoginPath } from "@/features/auth/service";
 
 export default function Register() {
   const navigate = useNavigate();
@@ -39,7 +39,7 @@ export default function Register() {
     setLoading(true);
 
     try {
-      const loggedInUser = await registerAndLoginUser({
+      const { user: loggedInUser, emailVerified } = await registerAndLoginUser({
         first_name: firstName,
         last_name: lastName,
         email,
@@ -47,6 +47,12 @@ export default function Register() {
         password,
         password_confirmation: passwordConfirmation,
       });
+
+      if (emailVerified) {
+        navigate(resolvePostLoginPath(), { replace: true });
+        return;
+      }
+
       setSuccess("Registration successful. Redirecting to OTP verification...");
       const verifiedEmail = encodeURIComponent(loggedInUser?.email ?? email);
       navigate(`/otp-verification?purpose=register&email=${verifiedEmail}`, {

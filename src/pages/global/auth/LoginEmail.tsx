@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input";
 import { getAuthErrorMessage, getAuthFieldErrors } from "@/features/auth/errorMessage";
 import { resolveIntendedPath } from "@/features/auth/paths";
 import { resolvePostLoginPath, loginUser } from "@/features/auth/service";
+import { PasswordSetupRequiredError } from "@/features/auth/passwordSetupRequired";
+import { SetInitialPasswordModal } from "@/components/auth/SetInitialPasswordModal";
 
 export default function LoginEmail() {
   const navigate = useNavigate();
@@ -20,6 +22,7 @@ export default function LoginEmail() {
   const [error, setError] = React.useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = React.useState<Record<string, string>>({});
   const [loading, setLoading] = React.useState(false);
+  const [claimEmail, setClaimEmail] = React.useState<string | null>(null);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -49,6 +52,10 @@ export default function LoginEmail() {
 
       navigate(resolvePostLoginPath(), { replace: true });
     } catch (err) {
+      if (err instanceof PasswordSetupRequiredError) {
+        setClaimEmail(err.email);
+        return;
+      }
       const errors = getAuthFieldErrors(err);
       setFieldErrors(errors);
       setError(getAuthErrorMessage(err, "Login failed. Please try again."));
@@ -58,7 +65,13 @@ export default function LoginEmail() {
   }
 
   return (
-    <div className="min-h-[60vh] flex items-center justify-center bg-auth-bg p-4">
+    <>
+      <SetInitialPasswordModal
+        email={claimEmail ?? ""}
+        open={claimEmail !== null}
+        onClose={() => setClaimEmail(null)}
+      />
+      <div className="min-h-[60vh] flex items-center justify-center bg-auth-bg p-4">
       <div className="max-w-md w-full bg-card p-8 rounded-lg shadow-lg">
         <div className="space-y-6">
           <div className="text-center mb-8">
@@ -144,5 +157,6 @@ export default function LoginEmail() {
         </div>
       </div>
     </div>
+    </>
   );
 }

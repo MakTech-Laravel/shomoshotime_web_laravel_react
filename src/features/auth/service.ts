@@ -18,12 +18,14 @@ import { setAccessToken, setRefreshToken, setStoredAuthUser } from '@/auth/token
 import { type AuthUser } from '@/auth/types'
 import { resolveAuthEndpoints } from '@/config/authEndpoints'
 import { USER_HOME_PATH } from '@/features/auth/paths'
+import { PasswordSetupRequiredError } from '@/features/auth/passwordSetupRequired'
 import {
   type LoginPayload,
   type PasswordResetOtpPayload,
   type RegisterPayload,
   type VerifyOtpPayload,
 } from '@/features/auth/types'
+import axios from 'axios'
 
 const endpoints = resolveAuthEndpoints()
 
@@ -169,9 +171,50 @@ export async function loginUser(payload: LoginPayload, handlers: AuthHandlers) {
     }
     return { user, needsEmailVerification: !isEmailVerifiedFromLoginBody(res.data) }
   } catch (error) {
+    if (axios.isAxiosError(error)) {
+      const body = error.response?.data
+      const data = unwrapLaravelData<{ action?: string; email?: string }>(body)
+      if (data?.action === 'PASSWORD_SETUP_REQUIRED') {
+        const email =
+          typeof data.email === 'string' && data.email ? data.email : payload.email
+        throw new PasswordSetupRequiredError(email)
+      }
+    }
     handlers.resetAuthState()
     throw error
   }
+}
+
+export async function sendClaimOtp(email: string) {
+  await request.post<unknown>(endpoints.claimSendOtp, { email })
+}
+
+export async function setInitialPassword(
+  payload: {
+    email: string
+    otp: string
+    password: string
+    password_confirmation: string
+  },
+  handlers: AuthHandlers,
+) {
+  const res = await request.post<unknown>(endpoints.claimSetPassword, {
+    email: payload.email,
+    otp: payload.otp,
+    password: payload.password,
+    password_confirmation: payload.password_confirmation,
+    fcm_token: getFcmToken(),
+  })
+  const user = await hydrateSessionFromLoginBody(
+    res.data,
+    handlers,
+    'Unable to restore your session after setting your password.',
+    'Password setup response is missing access token.',
+  )
+  if (isAdminAccount(user)) {
+    throw new Error('This sign-in page is for customer accounts only.')
+  }
+  return { user, needsEmailVerification: false }
 }
 
 export async function registerUser(payload: RegisterPayload) {
@@ -207,7 +250,10 @@ export async function registerAndLoginUser(payload: RegisterPayload) {
   }
   setStoredAuthUser(storedUser)
 
-  return storedUser
+  const otp = data?.otp
+  const emailVerified = otp === 'Verified' || otp === 'verified'
+
+  return { user: storedUser, emailVerified }
 }
 
 export async function requestPasswordResetOtp(payload: PasswordResetOtpPayload) {
