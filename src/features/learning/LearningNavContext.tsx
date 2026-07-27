@@ -27,6 +27,7 @@ const NAV_STALE_MS = 5 * 60 * 1000;
 
 function groupDeckMetadataBySpecialty(
   items: PublicDeckMetadata[],
+  kind: "flashcard" | "practice",
 ): Partial<Record<SpecialtySlug, NavChild[]>> {
   const rawBySpecialty: Partial<Record<SpecialtySlug, PublicDeckMetadata[]>> = {};
 
@@ -39,7 +40,8 @@ function groupDeckMetadataBySpecialty(
   const map: Partial<Record<SpecialtySlug, NavChild[]>> = {};
   for (const specialty of SPECIALTY_SLUGS) {
     const list = rawBySpecialty[specialty] ?? [];
-    const children = apiItemsToNavChildren(list, { specialty });
+    const reverse = !(kind === "practice" && specialty === "abdominal");
+    const children = apiItemsToNavChildren(list, { specialty, reverse });
     if (children.length > 0) map[specialty] = children;
   }
 
@@ -74,12 +76,12 @@ export function LearningNavProvider({ children }: { children: ReactNode }) {
   });
 
   const flashcardsBySpecialty = useMemo(
-    () => groupDeckMetadataBySpecialty(learningNavQuery.data?.flashcards ?? []),
+    () => groupDeckMetadataBySpecialty(learningNavQuery.data?.flashcards ?? [], "flashcard"),
     [learningNavQuery.data?.flashcards],
   );
 
   const practiceBySpecialty = useMemo(
-    () => groupDeckMetadataBySpecialty(learningNavQuery.data?.practice ?? []),
+    () => groupDeckMetadataBySpecialty(learningNavQuery.data?.practice ?? [], "practice"),
     [learningNavQuery.data?.practice],
   );
 

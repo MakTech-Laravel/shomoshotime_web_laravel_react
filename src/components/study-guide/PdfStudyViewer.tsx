@@ -1,17 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { PDFDocumentProxy } from "pdfjs-dist";
 import {
-  ChevronDown,
-  ChevronUp,
-  Eraser,
+  ChevronLeft,
+  ChevronRight,
   LayoutGrid,
-  MessageSquarePlus,
-  MoreVertical,
-  MousePointer2,
-  Paperclip,
-  Pencil,
   RotateCcw,
-  Search,
   X,
   ZoomIn,
   ZoomOut,
@@ -23,20 +16,10 @@ import {
   emptyAnnotations,
   type PageAnnotations,
   type PageAnnotationsMap,
-  type SearchMatch,
-  type ToolId,
 } from "@/components/study-guide/pdf-viewer-types";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
 import { useAuth } from "@/auth/useAuth";
 import { saveStudyGuidePageProgress } from "@/features/studyGuides/studyGuideProgressApi";
 import { isPdfDocumentCached, loadPdfDocument, type PdfLoadSources } from "@/lib/loadPdfDocument";
-import { searchPdfText } from "@/lib/pdfTextSearch";
 import { cn } from "@/lib/utils";
 
 import "./pdf-study-viewer.css";
@@ -48,25 +31,11 @@ type PdfStudyViewerProps = {
   contentId?: number;
 };
 
-const TOOLS: { id: ToolId; label: string; Icon: typeof MousePointer2 }[] = [
-  { id: "select", label: "Select", Icon: MousePointer2 },
-  { id: "comment", label: "Add comment", Icon: MessageSquarePlus },
-  { id: "draw", label: "Draw", Icon: Pencil },
-  { id: "attach", label: "Attach file", Icon: Paperclip },
-];
-
 const MIN_SCALE = 0.6;
 const MAX_SCALE = 2;
 const SCALE_STEP = 0.15;
 const MAX_RENDER_DPR = 2;
 const PAGE_GAP_PX = 16;
-
-function truncateFileName(name: string, max = 28) {
-  if (name.length <= max) return name;
-  const ext = name.includes(".") ? name.slice(name.lastIndexOf(".")) : "";
-  const base = name.slice(0, max - ext.length - 3);
-  return `${base}...${ext}`;
-}
 
 function getRenderDpr() {
   if (typeof window === "undefined") return 1;
@@ -75,11 +44,10 @@ function getRenderDpr() {
 
 const PROGRESS_DEBOUNCE_MS = 800;
 
-export function PdfStudyViewer({ pdfSources, fileName, className, contentId }: PdfStudyViewerProps) {
+export function PdfStudyViewer({ pdfSources, className, contentId }: PdfStudyViewerProps) {
   const { isAuthenticated } = useAuth();
   const viewportRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const searchInputRef = useRef<HTMLInputElement>(null);
   const scrollSyncLock = useRef(false);
   const progressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -88,7 +56,6 @@ export function PdfStudyViewer({ pdfSources, fileName, className, contentId }: P
   const [numPages, setNumPages] = useState(0);
   const [scale, setScale] = useState(1);
   const [pageWidth, setPageWidth] = useState(720);
-  const [activeTool, setActiveTool] = useState<ToolId>("select");
   const [annotations, setAnnotations] = useState<PageAnnotationsMap>({});
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isLoadingPdf, setIsLoadingPdf] = useState(true);
@@ -96,14 +63,9 @@ export function PdfStudyViewer({ pdfSources, fileName, className, contentId }: P
   const [scrollThumb, setScrollThumb] = useState({ top: 0, height: 40 });
 
   const [showThumbnails, setShowThumbnails] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchMatches, setSearchMatches] = useState<SearchMatch[]>([]);
-  const [matchIndex, setMatchIndex] = useState(0);
-  const [isSearching, setIsSearching] = useState(false);
 
   const renderWidth = Math.round(pageWidth * scale);
-  const activeMatch = searchMatches[matchIndex] ?? null;
+  const zoomPercent = Math.round(scale * 100);
 
   useEffect(() => {
     if (!contentId || !isAuthenticated) return;
@@ -168,8 +130,6 @@ export function PdfStudyViewer({ pdfSources, fileName, className, contentId }: P
     setNumPages(0);
     setPdfDoc(null);
     setAnnotations({});
-    setSearchMatches([]);
-    setSearchQuery("");
 
     if (!isPdfDocumentCached(pdfSources)) {
       setIsLoadingPdf(true);
@@ -295,33 +255,6 @@ export function PdfStudyViewer({ pdfSources, fileName, className, contentId }: P
     updateScrollThumb();
   }, [numPages, renderWidth, updateScrollThumb]);
 
-  useEffect(() => {
-    if (!pdfDoc || !searchQuery.trim()) {
-      setSearchMatches([]);
-      setMatchIndex(0);
-      return;
-    }
-
-    const handle = window.setTimeout(() => {
-      setIsSearching(true);
-      searchPdfText(pdfDoc, searchQuery)
-        .then((matches) => {
-          setSearchMatches(matches);
-          setMatchIndex(0);
-          if (matches[0]) scrollToPage(matches[0].page);
-        })
-        .finally(() => setIsSearching(false));
-    }, 280);
-
-    return () => window.clearTimeout(handle);
-  }, [pdfDoc, searchQuery, scrollToPage]);
-
-  useEffect(() => {
-    if (searchOpen) {
-      window.setTimeout(() => searchInputRef.current?.focus(), 0);
-    }
-  }, [searchOpen]);
-
   const goToPreviousPage = useCallback(() => {
     scrollToPage(Math.max(1, pageNumber - 1));
   }, [pageNumber, scrollToPage]);
@@ -329,16 +262,6 @@ export function PdfStudyViewer({ pdfSources, fileName, className, contentId }: P
   const goToNextPage = useCallback(() => {
     scrollToPage(numPages ? Math.min(numPages, pageNumber + 1) : pageNumber);
   }, [numPages, pageNumber, scrollToPage]);
-
-  const goToMatch = useCallback(
-    (direction: 1 | -1) => {
-      if (!searchMatches.length) return;
-      const next = (matchIndex + direction + searchMatches.length) % searchMatches.length;
-      setMatchIndex(next);
-      scrollToPage(searchMatches[next].page);
-    },
-    [matchIndex, searchMatches, scrollToPage],
-  );
 
   const zoomIn = useCallback(() => {
     setScale((current) => Math.min(MAX_SCALE, Number((current + SCALE_STEP).toFixed(2))));
@@ -350,54 +273,10 @@ export function PdfStudyViewer({ pdfSources, fileName, className, contentId }: P
 
   const resetZoom = useCallback(() => setScale(1), []);
 
-  const clearPageAnnotations = useCallback(() => {
-    setAnnotations((current) => ({
-      ...current,
-      [pageNumber]: emptyAnnotations(),
-    }));
-  }, [pageNumber]);
-
-  const clearAllAnnotations = useCallback(() => {
-    setAnnotations({});
-  }, []);
-
-  const openSearch = useCallback(() => {
-    setSearchOpen(true);
-    setActiveTool("select");
-  }, []);
-
-  const closeSearch = useCallback(() => {
-    setSearchOpen(false);
-    setSearchQuery("");
-    setSearchMatches([]);
-  }, []);
-
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
-        if (event.key === "Escape" && searchOpen) {
-          closeSearch();
-        }
         return;
-      }
-
-      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "f") {
-        event.preventDefault();
-        openSearch();
-        return;
-      }
-
-      if (searchOpen && searchMatches.length) {
-        if (event.key === "Enter" && event.shiftKey) {
-          event.preventDefault();
-          goToMatch(-1);
-          return;
-        }
-        if (event.key === "Enter") {
-          event.preventDefault();
-          goToMatch(1);
-          return;
-        }
       }
 
       if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
@@ -411,15 +290,7 @@ export function PdfStudyViewer({ pdfSources, fileName, className, contentId }: P
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [
-    closeSearch,
-    goToMatch,
-    goToNextPage,
-    goToPreviousPage,
-    openSearch,
-    searchMatches.length,
-    searchOpen,
-  ]);
+  }, [goToNextPage, goToPreviousPage]);
 
   const showPlaceholder = isLoadingPdf || numPages === 0;
 
@@ -441,209 +312,42 @@ export function PdfStudyViewer({ pdfSources, fileName, className, contentId }: P
   return (
     <div
       className={cn(
-        "pdf-study-viewer-root flex min-h-0 flex-col overflow-hidden rounded-[2px] border border-[#d6d6d6] bg-white shadow-[0_4px_28px_rgba(0,0,0,0.09)]",
+        "pdf-study-viewer-root flex min-h-0 flex-col overflow-hidden rounded-md border border-[#d6d6d6] bg-white shadow-[0_4px_28px_rgba(0,0,0,0.09)]",
         className,
       )}
+      onContextMenu={(e) => e.preventDefault()}
     >
-      <div className="shrink-0 border-b border-[#e0e0e0] bg-[#f5f5f5]">
-        <div className="flex h-10 items-center gap-3 px-4 sm:h-11">
-          <span
-            className="flex size-[22px] shrink-0 items-center justify-center rounded-[2px] bg-[#eb0000] text-[9px] font-bold leading-none text-white"
-            aria-hidden
-          >
-            PDF
-          </span>
-          <p className="min-w-0 flex-1 truncate text-center font-montserrat text-[13px] text-[#5c5c5c] sm:text-sm">
-            {truncateFileName(fileName, 32)}
-          </p>
-          <div className="flex shrink-0 items-center gap-1 text-[#4a4a4a]">
-            <button
-              type="button"
-              className={cn("rounded p-1.5 hover:bg-black/5", searchOpen && "bg-black/10")}
-              aria-label="Search in document"
-              aria-pressed={searchOpen}
-              onClick={() => (searchOpen ? closeSearch() : openSearch())}
-            >
-              <Search className="size-4" strokeWidth={2} />
-            </button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button
-                  type="button"
-                  className="rounded p-1.5 hover:bg-black/5"
-                  aria-label="More options"
-                >
-                  <MoreVertical className="size-4" strokeWidth={2} />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="font-montserrat">
-                <DropdownMenuItem onClick={resetZoom}>
-                  <RotateCcw className="size-4" />
-                  Reset zoom
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={clearPageAnnotations}>
-                  <Eraser className="size-4" />
-                  Clear marks on this page
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={clearAllAnnotations}>
-                  <Eraser className="size-4" />
-                  Clear all marks
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
-
-        {searchOpen && (
-          <div className="flex flex-wrap items-center gap-2 border-t border-[#e8e8e8] px-4 py-2">
-            <div className="relative min-w-[200px] flex-1">
-              <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-[#888]" />
-              <Input
-                ref={searchInputRef}
-                value={searchQuery}
-                onChange={(event) => setSearchQuery(event.target.value)}
-                placeholder="Find in document..."
-                className="h-8 pl-8 font-montserrat text-sm"
-                aria-label="Search text in PDF"
-              />
-            </div>
-            <span className="font-montserrat text-xs text-[#666]">
-              {isSearching
-                ? "Searching..."
-                : searchQuery
-                  ? `${searchMatches.length} match${searchMatches.length === 1 ? "" : "es"}`
-                  : "Type to search"}
-            </span>
-            <button
-              type="button"
-              disabled={!searchMatches.length}
-              onClick={() => goToMatch(-1)}
-              className="rounded px-2 py-1 font-montserrat text-xs text-[#333] hover:bg-black/5 disabled:opacity-40"
-            >
-              Previous
-            </button>
-            <button
-              type="button"
-              disabled={!searchMatches.length}
-              onClick={() => goToMatch(1)}
-              className="rounded px-2 py-1 font-montserrat text-xs text-[#333] hover:bg-black/5 disabled:opacity-40"
-            >
-              Next
-            </button>
-            <button
-              type="button"
-              onClick={closeSearch}
-              className="rounded p-1 hover:bg-black/5"
-              aria-label="Close search"
-            >
-              <X className="size-4" />
-            </button>
-          </div>
-        )}
-      </div>
-
       <div ref={viewportRef} className="relative min-h-0 flex-1 bg-[#ebebeb]">
-        <div className="absolute left-4 top-4 z-20 hidden flex-col overflow-hidden rounded-[2px] border border-[#c4c4c4] bg-[#ececec] shadow-[0_1px_4px_rgba(0,0,0,0.12)] md:flex">
-          {TOOLS.map(({ id, label, Icon }) => (
-            <button
-              key={id}
-              type="button"
-              aria-label={label}
-              aria-pressed={activeTool === id}
-              onClick={() => setActiveTool(id)}
-              className={cn(
-                "flex size-10 items-center justify-center border-b border-[#d8d8d8] transition-colors last:border-b-0",
-                activeTool === id
-                  ? "bg-[#2b6cb0] text-white"
-                  : "text-[#5a5a5a] hover:bg-[#e0e0e0]",
-              )}
-            >
-              <Icon className="size-[18px]" strokeWidth={2} />
-            </button>
-          ))}
-        </div>
-
         {showThumbnails && pdfDoc && !showPlaceholder && (
-          <div className="pdf-study-thumbnails absolute bottom-20 left-2 top-14 z-20 flex w-[5.5rem] flex-col gap-2 overflow-y-auto rounded-[2px] border border-[#c4c4c4] bg-white p-1.5 shadow-[0_1px_4px_rgba(0,0,0,0.12)] sm:left-4 sm:w-[7.5rem] sm:p-2 md:bottom-4 md:left-4 md:top-[4.75rem]">
-            {pageItems.map((page) => (
-              <PdfThumbnail
-                key={page}
-                pdf={pdfDoc}
-                pageNumber={page}
-                isActive={page === pageNumber}
-                onSelect={(target) => scrollToPage(target)}
-              />
-            ))}
-          </div>
+          <aside className="pdf-study-thumbnails absolute bottom-16 left-0 top-0 z-20 flex w-36 flex-col border-r border-[#c4c4c4] bg-white sm:w-44">
+            <div className="flex items-center justify-between border-b border-[#e5e7eb] px-3 py-2">
+              <span className="font-montserrat text-xs font-semibold text-[#333]">Thumbnails</span>
+              <button
+                type="button"
+                onClick={() => setShowThumbnails(false)}
+                className="rounded p-1 text-[#666] hover:bg-[#f3f3f3]"
+                aria-label="Close thumbnails"
+              >
+                <X className="size-4" />
+              </button>
+            </div>
+            <div className="flex flex-1 flex-col gap-2 overflow-y-auto p-2">
+              {pageItems.map((page) => (
+                <PdfThumbnail
+                  key={page}
+                  pdf={pdfDoc}
+                  pageNumber={page}
+                  isActive={page === pageNumber}
+                  onSelect={(target) => scrollToPage(target)}
+                />
+              ))}
+            </div>
+          </aside>
         )}
-
-        <div className="absolute right-4 top-4 z-20 hidden w-11 flex-col items-center gap-1 rounded-[2px] border border-[#c4c4c4] bg-white px-1.5 py-2 shadow-[0_1px_4px_rgba(0,0,0,0.12)] md:flex">
-          <div className="flex flex-col items-center gap-0.5">
-            <button
-              type="button"
-              onClick={goToPreviousPage}
-              disabled={pageNumber <= 1}
-              className="rounded p-0.5 text-[#5a5a5a] hover:bg-[#f3f3f3] disabled:opacity-30"
-              aria-label="Previous page"
-            >
-              <ChevronUp className="size-4" strokeWidth={2.5} />
-            </button>
-            <p className="whitespace-nowrap px-0.5 text-center font-montserrat text-[11px] leading-none text-[#333]">
-              <span className="font-semibold">{pageNumber}</span>
-              <span className="text-[#999]"> / </span>
-              <span className="text-[#666]">{numPages || "—"}</span>
-            </p>
-            <button
-              type="button"
-              onClick={goToNextPage}
-              disabled={!numPages || pageNumber >= numPages}
-              className="rounded p-0.5 text-[#5a5a5a] hover:bg-[#f3f3f3] disabled:opacity-30"
-              aria-label="Next page"
-            >
-              <ChevronDown className="size-4" strokeWidth={2.5} />
-            </button>
-          </div>
-
-          <div className="my-0.5 h-px w-full bg-[#ececec]" aria-hidden />
-
-          <button
-            type="button"
-            className={cn(
-              "rounded p-1.5 text-[#5a5a5a] hover:bg-[#f0f0f0]",
-              showThumbnails && "bg-[#2b6cb0] text-white hover:bg-[#255fa0]",
-            )}
-            aria-label="Page thumbnails"
-            aria-pressed={showThumbnails}
-            onClick={() => setShowThumbnails((open) => !open)}
-          >
-            <LayoutGrid className="size-[18px]" strokeWidth={2} />
-          </button>
-
-          <div className="flex flex-col gap-0.5">
-            <button
-              type="button"
-              onClick={zoomIn}
-              disabled={scale >= MAX_SCALE}
-              className="rounded p-1.5 text-[#5a5a5a] hover:bg-[#f3f3f3] disabled:opacity-30"
-              aria-label="Zoom in"
-            >
-              <ZoomIn className="size-[18px]" strokeWidth={2} />
-            </button>
-            <button
-              type="button"
-              onClick={zoomOut}
-              disabled={scale <= MIN_SCALE}
-              className="rounded p-1.5 text-[#5a5a5a] hover:bg-[#f3f3f3] disabled:opacity-30"
-              aria-label="Zoom out"
-            >
-              <ZoomOut className="size-[18px]" strokeWidth={2} />
-            </button>
-          </div>
-        </div>
 
         {!showPlaceholder && !loadError && (
           <div
-            className="pdf-study-scrollbar-track absolute right-1 top-4 bottom-20 z-10 hidden w-2 cursor-pointer rounded-full bg-[#d4d4d4] md:bottom-4 md:block"
+            className="pdf-study-scrollbar-track absolute right-1 top-4 bottom-16 z-10 hidden w-2 cursor-pointer rounded-full bg-[#d4d4d4] md:block"
             onClick={onTrackClick}
             aria-hidden
           >
@@ -654,56 +358,14 @@ export function PdfStudyViewer({ pdfSources, fileName, className, contentId }: P
           </div>
         )}
 
-        {/* Mobile bottom toolbar */}
         {!showPlaceholder && !loadError && (
-          <div className="absolute inset-x-0 bottom-0 z-30 flex items-center justify-between gap-1 border-t border-[#d0d0d0] bg-white/95 px-2 py-1.5 backdrop-blur-sm md:hidden">
-            <div className="flex items-center gap-0.5">
-              {TOOLS.map(({ id, label, Icon }) => (
-                <button
-                  key={id}
-                  type="button"
-                  aria-label={label}
-                  aria-pressed={activeTool === id}
-                  onClick={() => setActiveTool(id)}
-                  className={cn(
-                    "flex size-9 items-center justify-center rounded-[2px] transition-colors",
-                    activeTool === id
-                      ? "bg-[#2b6cb0] text-white"
-                      : "text-[#5a5a5a] hover:bg-[#f0f0f0]",
-                  )}
-                >
-                  <Icon className="size-4" strokeWidth={2} />
-                </button>
-              ))}
-            </div>
-            <div className="flex items-center gap-1">
-              <button
-                type="button"
-                onClick={goToPreviousPage}
-                disabled={pageNumber <= 1}
-                className="rounded p-1.5 text-[#5a5a5a] hover:bg-[#f3f3f3] disabled:opacity-30"
-                aria-label="Previous page"
-              >
-                <ChevronUp className="size-4" strokeWidth={2.5} />
-              </button>
-              <span className="min-w-[3rem] text-center font-montserrat text-[11px] text-[#333]">
-                <span className="font-semibold">{pageNumber}</span>
-                <span className="text-[#999]">/{numPages || "—"}</span>
-              </span>
-              <button
-                type="button"
-                onClick={goToNextPage}
-                disabled={!numPages || pageNumber >= numPages}
-                className="rounded p-1.5 text-[#5a5a5a] hover:bg-[#f3f3f3] disabled:opacity-30"
-                aria-label="Next page"
-              >
-                <ChevronDown className="size-4" strokeWidth={2.5} />
-              </button>
+          <div className="pdf-study-bottom-toolbar absolute inset-x-0 bottom-4 z-30 flex justify-center px-4">
+            <div className="flex items-center gap-1 rounded-md border border-[#c4c4c4] bg-[#e8eef3]/95 px-2 py-1.5 shadow-[0_2px_8px_rgba(0,0,0,0.12)] backdrop-blur-sm sm:gap-2 sm:px-3">
               <button
                 type="button"
                 className={cn(
-                  "rounded p-1.5 text-[#5a5a5a] hover:bg-[#f0f0f0]",
-                  showThumbnails && "bg-[#2b6cb0] text-white hover:bg-[#255fa0]",
+                  "rounded p-1.5 text-[#5a5a5a] hover:bg-white/70",
+                  showThumbnails && "bg-white text-[#333]",
                 )}
                 aria-label="Page thumbnails"
                 aria-pressed={showThumbnails}
@@ -713,21 +375,55 @@ export function PdfStudyViewer({ pdfSources, fileName, className, contentId }: P
               </button>
               <button
                 type="button"
+                onClick={goToPreviousPage}
+                disabled={pageNumber <= 1}
+                className="rounded p-1.5 text-[#5a5a5a] hover:bg-white/70 disabled:opacity-30"
+                aria-label="Previous page"
+              >
+                <ChevronLeft className="size-4" strokeWidth={2.5} />
+              </button>
+              <span className="min-w-[4.5rem] text-center font-montserrat text-xs text-[#333] sm:text-sm">
+                <span className="font-semibold">{pageNumber}</span>
+                <span className="text-[#999]"> / </span>
+                <span className="text-[#666]">{numPages || "—"}</span>
+              </span>
+              <button
+                type="button"
+                onClick={goToNextPage}
+                disabled={!numPages || pageNumber >= numPages}
+                className="rounded p-1.5 text-[#5a5a5a] hover:bg-white/70 disabled:opacity-30"
+                aria-label="Next page"
+              >
+                <ChevronRight className="size-4" strokeWidth={2.5} />
+              </button>
+              <button
+                type="button"
                 onClick={zoomOut}
                 disabled={scale <= MIN_SCALE}
-                className="rounded p-1.5 text-[#5a5a5a] hover:bg-[#f3f3f3] disabled:opacity-30"
+                className="rounded p-1.5 text-[#5a5a5a] hover:bg-white/70 disabled:opacity-30"
                 aria-label="Zoom out"
               >
                 <ZoomOut className="size-4" strokeWidth={2} />
               </button>
+              <span className="min-w-[3rem] text-center font-montserrat text-xs tabular-nums text-[#333] sm:text-sm">
+                {zoomPercent}%
+              </span>
               <button
                 type="button"
                 onClick={zoomIn}
                 disabled={scale >= MAX_SCALE}
-                className="rounded p-1.5 text-[#5a5a5a] hover:bg-[#f3f3f3] disabled:opacity-30"
+                className="rounded p-1.5 text-[#5a5a5a] hover:bg-white/70 disabled:opacity-30"
                 aria-label="Zoom in"
               >
                 <ZoomIn className="size-4" strokeWidth={2} />
+              </button>
+              <button
+                type="button"
+                onClick={resetZoom}
+                className="rounded p-1.5 text-[#5a5a5a] hover:bg-white/70"
+                aria-label="Reset zoom"
+              >
+                <RotateCcw className="size-4" strokeWidth={2} />
               </button>
             </div>
           </div>
@@ -736,8 +432,8 @@ export function PdfStudyViewer({ pdfSources, fileName, className, contentId }: P
         <div
           ref={scrollRef}
           className={cn(
-            "pdf-study-scroll-area absolute inset-0 overflow-x-hidden overflow-y-auto px-2 py-6 pb-[4.25rem] md:px-0 md:py-10 md:pb-10 md:pr-16 md:pl-16",
-            showThumbnails && "md:pl-40",
+            "pdf-study-scroll-area absolute inset-0 overflow-x-hidden overflow-y-auto px-2 py-6 pb-20 sm:px-4 sm:py-8",
+            showThumbnails && "pl-36 sm:pl-44",
           )}
         >
           {loadError ? (
@@ -763,10 +459,10 @@ export function PdfStudyViewer({ pdfSources, fileName, className, contentId }: P
                     pageNumber={page}
                     width={renderWidth}
                     devicePixelRatio={renderDpr}
-                    tool={activeTool}
+                    tool="select"
                     annotations={annotations[page] ?? emptyAnnotations()}
                     onAnnotationsChange={(next) => updatePageAnnotations(page, next)}
-                    highlightSearch={activeMatch?.page === page}
+                    highlightSearch={false}
                   />
                 ))}
               </div>

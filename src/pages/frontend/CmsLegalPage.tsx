@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 import { fetchCmsPage, type CmsPageType } from "@/features/cms/cmsApi";
+import { isCmsContentEmpty, renderCmsContent } from "@/features/cms/renderCmsContent";
 import { container } from "@/lib/container";
 import { cn } from "@/lib/utils";
 
@@ -15,6 +16,9 @@ export default function CmsLegalPage({ type, title }: CmsLegalPageProps) {
     queryKey: ["cms", type],
     queryFn: () => fetchCmsPage(type),
   });
+
+  const htmlContent = data?.content ? renderCmsContent(data.content) : "";
+  const hasContent = htmlContent.length > 0 && !isCmsContentEmpty(htmlContent);
 
   useEffect(() => {
     document.title = `${title} | Sonographer Pal`;
@@ -30,10 +34,10 @@ export default function CmsLegalPage({ type, title }: CmsLegalPageProps) {
         <div className="prose prose-neutral mx-auto mt-10 max-w-3xl rounded-md border border-[#e5e7eb] bg-white p-8 shadow-sm">
           {isLoading ? (
             <p className="font-sans text-base text-[#666666]">Loading…</p>
-          ) : data?.content ? (
+          ) : hasContent ? (
             <div
               className="font-sans text-base leading-relaxed text-[#333333]"
-              dangerouslySetInnerHTML={{ __html: data.content }}
+              dangerouslySetInnerHTML={{ __html: htmlContent }}
             />
           ) : (
             <p className="font-sans text-base text-[#666666]">

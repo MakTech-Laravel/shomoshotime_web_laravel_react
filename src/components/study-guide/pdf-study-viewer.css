@@ -28,6 +28,14 @@
   scrollbar-color: #3d3d3d #f0f0f0;
 }
 
+.pdf-study-bottom-toolbar {
+  pointer-events: none;
+}
+
+.pdf-study-bottom-toolbar > div {
+  pointer-events: auto;
+}
+
 @media print {
   .pdf-study-viewer-root {
     display: none !important;

@@ -1,51 +1,78 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery } from "@tanstack/react-query";
 
 import {
   SPECIALTY_DISPLAY_LABELS,
   SPECIALTY_SLUGS,
-  type SpecialtySlug,
 } from "@/data/specialtyResources";
 import {
   fetchMockExamSets,
   startMockTest,
   type MockExamSet,
 } from "@/features/mockExams/mockExamsApi";
+import {
+  filterMockExamsByTab,
+  type MockExamFilterKey,
+} from "@/features/mockExams/mockExamFilters";
 import { container } from "@/lib/container";
 import { cn } from "@/lib/utils";
+
+function MockExamCardSkeleton() {
+  return (
+    <article className="flex animate-pulse flex-col rounded-md border border-[#e5e7eb] bg-white p-6 shadow-sm">
+      <div className="h-6 w-3/4 rounded bg-[#e5e7eb]" />
+      <div className="mt-3 h-4 w-1/2 rounded bg-[#f0f0f0]" />
+      <div className="mt-3 h-4 w-2/3 rounded bg-[#f0f0f0]" />
+      <div className="mt-5 h-10 rounded-lg bg-[#f0f0f0]" />
+    </article>
+  );
+}
 
 function MockExamCard({
   exam,
   onStart,
+  onResume,
+  isStarting,
+  startingId,
 }: {
   exam: MockExamSet;
   onStart: (id: number) => void;
+  onResume: (id: number) => void;
+  isStarting: boolean;
+  startingId: number | null;
 }) {
   const completedAttempts = exam.attempts_used;
   const bestScore = exam.best_score_percentage;
-  const attemptsExhausted = !exam.can_start && exam.attempts_remaining <= 0;
+  const inProgress = !exam.can_start && exam.attempts_remaining > 0;
+  const isPending = isStarting && startingId === exam.id;
 
   return (
     <article className="flex flex-col rounded-md border border-[#e5e7eb] bg-white p-6 shadow-sm">
-      <h3 className="font-heading text-lg font-bold text-black">{exam.title}</h3>
-      {exam.subtitle ? (
+      <h3 className="font-heading text-lg font-bold text-black">
+        {exam.title}
+      </h3>
+      {/* {exam.subtitle ? (
         <p className="mt-1 font-sans text-sm text-[#666666]">{exam.subtitle}</p>
-      ) : null}
+      ) : null} */}
       <p className="mt-3 font-sans text-sm text-[#333333]">
-        {exam.total_questions} questions · {exam.status_label || "Mock exam"}
+        {exam.total_questions} questions {/* · {exam.status_label || "Mock exam"} */}
       </p>
       <p className="mt-1 font-sans text-xs text-[#888888]">
-        Attempts used: {completedAttempts} / 3
+        Attempts completed: {completedAttempts}
         {bestScore > 0 ? ` · Best score: ${bestScore.toFixed(0)}%` : ""}
       </p>
       <button
         type="button"
-        disabled={attemptsExhausted}
-        onClick={() => onStart(exam.id)}
+        disabled={isPending || (!exam.can_start && !inProgress)}
+        onClick={() => (inProgress ? onResume(exam.id) : onStart(exam.id))}
         className="mt-5 rounded-lg bg-[#FFC107] px-4 py-2.5 font-sans text-sm font-semibold text-black transition hover:bg-[#e6ac00] disabled:cursor-not-allowed disabled:opacity-45"
       >
-        {attemptsExhausted ? "All attempts used" : "Start mock exam"}
+        {isPending
+          ? "Starting…"
+          : inProgress
+            ? "Resume mock exam"
+            : "Start mock exam"}
       </button>
     </article>
   );
@@ -53,10 +80,16 @@ function MockExamCard({
 
 export default function MockExamsPage() {
   const navigate = useNavigate();
-  const [activeSpecialty, setActiveSpecialty] = useState<SpecialtySlug | "all">("all");
+  const [activeSpecialty, setActiveSpecialty] = useState<MockExamFilterKey>("arrt");
   const [startError, setStartError] = useState<string | null>(null);
+  const [startingId, setStartingId] = useState<number | null>(null);
 
-  const { data: exams = [], isLoading } = useQuery({
+  const {
+    data: exams = [],
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery({
     queryKey: ["mock-exams", "sets"],
     queryFn: () => fetchMockExamSets(),
     retry: false,
@@ -65,9 +98,11 @@ export default function MockExamsPage() {
   const startMutation = useMutation({
     mutationFn: (questionSetId: number) => startMockTest(questionSetId),
     onSuccess: (_data, questionSetId) => {
+      setStartingId(null);
       navigate(`/mock-exams/${questionSetId}`);
     },
     onError: (error: Error) => {
+      setStartingId(null);
       setStartError(error.message || "Could not start mock exam.");
     },
   });
@@ -76,22 +111,25 @@ export default function MockExamsPage() {
     document.title = "Mock Exams | Sonographer Pal";
   }, []);
 
-  const filtered =
-    activeSpecialty === "all"
-      ? exams
-      : exams.filter((e) =>
-          e.category.toLowerCase().includes(
-            SPECIALTY_DISPLAY_LABELS[activeSpecialty].toLowerCase().split("/")[0] ?? "",
-          ),
-        );
+  const visibleExams = filterMockExamsByTab(exams, activeSpecialty);
 
-  const grouped = SPECIALTY_SLUGS.reduce<Record<string, MockExamSet[]>>((acc, slug) => {
-    const label = SPECIALTY_DISPLAY_LABELS[slug];
-    acc[slug] = exams.filter((e) =>
-      e.category.toLowerCase().includes(label.toLowerCase().split("/")[0] ?? ""),
-    );
-    return acc;
-  }, {});
+  function handleStart(id: number) {
+    setStartError(null);
+    setStartingId(id);
+    startMutation.mutate(id);
+  }
+
+  function handleResume(id: number) {
+    setStartError(null);
+    navigate(`/mock-exams/${id}`);
+  }
+
+  const cardProps = {
+    onStart: handleStart,
+    onResume: handleResume,
+    isStarting: startMutation.isPending,
+    startingId,
+  };
 
   return (
     <div className="min-h-screen bg-[#fdf5ee]">
@@ -100,21 +138,21 @@ export default function MockExamsPage() {
           Mock Exams
         </h1>
         <p className="mx-auto mt-4 max-w-2xl text-center font-sans text-base text-[#444444]">
-          Timed practice exams to simulate board-style testing. Up to three attempts per exam.
+          Graded mock exams for each specialty
         </p>
 
         <div className="mt-8 flex flex-wrap justify-center gap-2">
           <button
             type="button"
-            onClick={() => setActiveSpecialty("all")}
+            onClick={() => setActiveSpecialty("arrt")}
             className={cn(
               "rounded-full border px-4 py-1.5 font-sans text-sm font-medium",
-              activeSpecialty === "all"
+              activeSpecialty === "arrt"
                 ? "border-[#b8860b] bg-[#FFC107] text-black"
                 : "border-[#d0d0d0] bg-white text-[#333333]",
             )}
           >
-            All
+            ARRT
           </button>
           {SPECIALTY_SLUGS.map((slug) => (
             <button
@@ -134,65 +172,49 @@ export default function MockExamsPage() {
         </div>
 
         {startError ? (
-          <p className="mt-6 text-center font-sans text-sm text-[#c62828]">{startError}</p>
+          <p className="mt-6 text-center font-sans text-sm text-[#c62828]">
+            {startError}
+          </p>
         ) : null}
 
-        {isLoading ? (
-          <p className="mt-12 text-center font-sans text-base text-[#666666]">Loading mock exams…</p>
-        ) : activeSpecialty === "all" ? (
-          <div className="mt-10 space-y-12">
-            {SPECIALTY_SLUGS.map((slug) =>
-              grouped[slug]?.length ? (
-                <section key={slug}>
-                  <h2 className="mb-4 font-heading text-xl font-bold text-black">
-                    {SPECIALTY_DISPLAY_LABELS[slug]}
-                  </h2>
-                  <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                    {grouped[slug].map((exam) => (
-                      <MockExamCard
-                        key={exam.id}
-                        exam={exam}
-                        onStart={(id) => {
-                          setStartError(null);
-                          startMutation.mutate(id);
-                        }}
-                      />
-                    ))}
-                  </div>
-                </section>
-              ) : null,
-            )}
-            {exams.length === 0 ? (
-              <p className="text-center font-sans text-base text-[#666666]">
-                No mock exams are available yet.
-              </p>
-            ) : null}
+        {isError ? (
+          <div className="mt-12 text-center">
+            <p className="font-sans text-base text-[#c62828]">
+              Could not load mock exams. Please try again.
+            </p>
+            <button
+              type="button"
+              onClick={() => void refetch()}
+              className="mt-4 rounded-lg border border-[#d0d0d0] bg-white px-4 py-2 font-sans text-sm font-medium text-[#333333] hover:bg-[#f5f5f5]"
+            >
+              Retry
+            </button>
+          </div>
+        ) : isLoading ? (
+          <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <MockExamCardSkeleton key={i} />
+            ))}
           </div>
         ) : (
-          <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {filtered.map((exam) => (
-              <MockExamCard
-                key={exam.id}
-                exam={exam}
-                onStart={(id) => {
-                  setStartError(null);
-                  startMutation.mutate(id);
-                }}
-              />
-            ))}
-            {filtered.length === 0 ? (
-              <p className="col-span-full text-center font-sans text-base text-[#666666]">
-                No mock exams for this specialty yet.
+          <div className="mt-10">
+            {/* {activeSpecialty === "arrt" ? (
+              <h2 className="mb-4 font-heading text-xl font-bold text-black">ARRT</h2>
+            ) : null} */}
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {visibleExams.map((exam) => (
+                <MockExamCard key={exam.id} exam={exam} {...cardProps} />
+              ))}
+            </div>
+            {visibleExams.length === 0 ? (
+              <p className="mt-6 text-center font-sans text-base text-[#666666]">
+                {activeSpecialty === "arrt"
+                  ? "No ARRT mock exams available yet."
+                  : "No mock exams for this specialty yet."}
               </p>
             ) : null}
           </div>
         )}
-
-        <p className="mt-12 text-center font-sans text-sm text-[#666666]">
-          <Link to="/exploreresources" className="text-[#b8860b] hover:underline">
-            Explore all study resources
-          </Link>
-        </p>
       </div>
     </div>
   );

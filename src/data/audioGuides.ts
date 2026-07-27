@@ -1,4 +1,5 @@
 import type { AudioPlayerTrack } from "@/components/ui/AudioPlayer";
+import type { SpecialtySlug } from "@/data/specialtyResources";
 import { env } from "@/config/env";
 
 function audioStreamUrl(filename: string): string {
@@ -51,3 +52,22 @@ export const SPI_AUDIO_TRACKS: AudioPlayerTrack[] = [
     displayDuration: "21:01",
   },
 ];
+
+/**
+ * Per-specialty audio playlists (static metadata; files stream from GET /api/v1/audio/{filename}).
+ * Add Vascular / OB-GYN / Abdomen filenames here when MP3s are on storage — no API changes needed.
+ */
+export const AUDIO_TRACKS_BY_SPECIALTY: Record<SpecialtySlug, AudioPlayerTrack[]> = {
+  spi: SPI_AUDIO_TRACKS,
+  vascular: [],
+  "ob-gyn": [],
+  abdominal: [],
+};
+
+export function getAudioTracksForSpecialty(specialty: SpecialtySlug): AudioPlayerTrack[] {
+  return AUDIO_TRACKS_BY_SPECIALTY[specialty] ?? [];
+}
+
+export function hasAudioTracksForSpecialty(specialty: SpecialtySlug): boolean {
+  return getAudioTracksForSpecialty(specialty).length > 0;
+}

@@ -1,4 +1,5 @@
 ﻿import type { SpecialtySlug } from "@/data/specialtyResources";
+import { specialtyForContentCategory } from "@/features/studyGuides/specialtyCategory";
 
 const SPECIALTY_TO_CATEGORY: Record<SpecialtySlug, string> = {
   spi: "SPI",
@@ -16,5 +17,5 @@ export function categoryMatchesSpecialty(
   specialty: SpecialtySlug,
 ): boolean {
   if (!category) return false;
-  return category.toLowerCase() === specialtyToCategory(specialty).toLowerCase();
+  return specialtyForContentCategory(category) === specialty;
 }

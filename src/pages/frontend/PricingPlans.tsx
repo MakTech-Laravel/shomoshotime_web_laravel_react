@@ -8,6 +8,7 @@ import type { SubscriptionPlan } from "@/features/subscriptions/subscriptionsApi
 import {
   billingPeriodLabel,
   cardVariant,
+  formatPlanPrice,
   isFeaturedPlan,
   planRegisterSlug,
   pricingGridClass,
@@ -135,8 +136,6 @@ export default function PricingPlans() {
     document.title = "Plans & Pricing | Sonographer Pal";
   }, []);
 
-  console.log('check plans', plans)
-
   useEffect(() => {
     if (searchParams.get("checkout") !== "cancelled") return;
     toast.error("Checkout was cancelled.");
@@ -221,7 +220,7 @@ export default function PricingPlans() {
 
                         <div className="mt-5">
                           <PriceDisplay
-                            amount={String(Math.round(plan.price))}
+                            amount={formatPlanPrice(plan.price)}
                             inverted={isFeatured}
                           />
                         </div>

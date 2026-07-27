@@ -1,6 +1,7 @@
 import * as React from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 import { ArrowRight, Eye } from "lucide-react";
+import toast from "react-hot-toast";
 
 import { useAuth } from "@/auth/useAuth";
 import { Button } from "@/components/ui/button";
@@ -8,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { getAuthErrorMessage, getAuthFieldErrors } from "@/features/auth/errorMessage";
 import { resolveIntendedPath } from "@/features/auth/paths";
 import { resolvePostLoginPath, loginUser } from "@/features/auth/service";
+import { WixUseForgotPasswordError } from "@/features/auth/wixUseForgotPassword";
 
 export default function LoginEmail() {
   const navigate = useNavigate();
@@ -18,6 +20,8 @@ export default function LoginEmail() {
   const [password, setPassword] = React.useState("");
   const [showPassword, setShowPassword] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const [wixTransferMessage, setWixTransferMessage] = React.useState<string | null>(null);
+  const [wixTransferEmail, setWixTransferEmail] = React.useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = React.useState<Record<string, string>>({});
   const [loading, setLoading] = React.useState(false);
 
@@ -25,6 +29,8 @@ export default function LoginEmail() {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    setWixTransferMessage(null);
+    setWixTransferEmail(null);
     setFieldErrors({});
 
     try {
@@ -49,6 +55,20 @@ export default function LoginEmail() {
 
       navigate(resolvePostLoginPath(), { replace: true });
     } catch (err) {
+      if (err instanceof WixUseForgotPasswordError) {
+        setWixTransferMessage(err.message);
+        setWixTransferEmail(err.email);
+        toast(err.message, {
+          duration: 8000,
+          icon: "ℹ️",
+          style: {
+            background: "#fffbeb",
+            color: "#78350f",
+            border: "1px solid #fcd34d",
+          },
+        });
+        return;
+      }
       const errors = getAuthFieldErrors(err);
       setFieldErrors(errors);
       setError(getAuthErrorMessage(err, "Login failed. Please try again."));
@@ -56,6 +76,10 @@ export default function LoginEmail() {
       setLoading(false);
     }
   }
+
+  const forgotPasswordHref = wixTransferEmail
+    ? `/forget-password?email=${encodeURIComponent(wixTransferEmail)}`
+    : "/forget-password";
 
   return (
     <div className="min-h-[60vh] flex items-center justify-center bg-auth-bg p-4">
@@ -66,6 +90,21 @@ export default function LoginEmail() {
               Log in with Email
             </h2>
           </div>
+
+          {wixTransferMessage ? (
+            <div
+              className="rounded-md border border-amber-300/60 bg-amber-50 px-4 py-3 text-sm text-amber-950 dark:border-amber-700/50 dark:bg-amber-950/30 dark:text-amber-100"
+              role="status"
+            >
+              <p>{wixTransferMessage}</p>
+              <Link
+                to={forgotPasswordHref}
+                className="mt-3 inline-flex font-medium text-[#996e00] underline hover:no-underline"
+              >
+                Go to Forgot Password
+              </Link>
+            </div>
+          ) : null}
 
           <form className="space-y-4" onSubmit={onSubmit}>
             <div>

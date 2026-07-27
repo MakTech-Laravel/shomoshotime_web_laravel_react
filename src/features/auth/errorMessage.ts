@@ -5,6 +5,8 @@ import {
   firstValidationMessage,
   type ApiValidationErrorBody,
 } from '@/api/validationErrors'
+import { unwrapLaravelData } from '@/api/laravelResponse'
+import { WIX_USE_FORGOT_PASSWORD_ACTION } from '@/features/auth/wixUseForgotPassword'
 
 export type FieldErrorMap = Record<string, string>
 
@@ -47,6 +49,14 @@ export function getAuthFieldErrors(error: unknown): FieldErrorMap {
 export function getAuthErrorMessage(error: unknown, fallback: string): string {
   if (axios.isAxiosError(error)) {
     const data = error.response?.data as ApiValidationErrorBody | undefined
+
+    const payload = unwrapLaravelData<{ action?: string }>(data)
+    if (payload?.action === WIX_USE_FORGOT_PASSWORD_ACTION) {
+      return (
+        data?.message ??
+        'Welcome to our new platform! Your account has been transferred successfully. Before you can log in, please use the "Forgot Password" option to create a new password for your account.'
+      )
+    }
 
     if (data?.message && data.success !== true) return data.message
 

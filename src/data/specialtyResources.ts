@@ -13,9 +13,12 @@ export const SPECIALTY_DISPLAY_LABELS: Record<SpecialtySlug, string> = {
   abdominal: "Abdomen",
 };
 
-/** Specialty routes that have audio content available on the web. */
-export const SPECIALTY_AUDIO_HREF: Partial<Record<SpecialtySlug, string>> = {
+/** Public audio page paths (nav links). Tracks may be empty until MP3s are added in audioGuides.ts. */
+export const SPECIALTY_AUDIO_HREF: Record<SpecialtySlug, string> = {
   spi: "/audio/spi",
+  vascular: "/audio/vascular",
+  "ob-gyn": "/audio/ob-gyn",
+  abdominal: "/audio/abdominal",
 };
 
 export const DEFAULT_DECK_SLUG = "fundamentals";

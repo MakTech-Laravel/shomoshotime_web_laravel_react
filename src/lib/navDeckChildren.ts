@@ -11,6 +11,13 @@ const SPI_DECK_SLUGS = [
 
 type SortableTitle = { title: string; sort_order?: number; id?: number };
 
+export type NavChild = { label: string; slug: string };
+
+/** Reverse nav dropdown order for web display (slug/label pairs stay intact). */
+export function reverseNavChildren(children: NavChild[]): NavChild[] {
+  return [...children].reverse();
+}
+
 function sortByOrder<T extends SortableTitle>(items: T[]): T[] {
   return [...items].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0) || (a.id ?? 0) - (b.id ?? 0));
 }
@@ -32,7 +39,7 @@ function slugForItem(
 /** Map API content/question sets to nav children. SPI keeps legacy slugs; other specialties use deck-{id}. */
 export function apiItemsToNavChildren(
   items: SortableTitle[],
-  options?: { specialty?: SpecialtySlug },
+  options?: { specialty?: SpecialtySlug; reverse?: boolean },
 ): { label: string; slug: string }[] {
   const sorted = sortByOrder(items);
   if (sorted.length === 0) return [];
@@ -61,7 +68,7 @@ export function apiItemsToNavChildren(
     });
   }
 
-  return result;
+  return options?.reverse === false ? result : reverseNavChildren(result);
 }
 
 export function firstDeckSlugForSets(

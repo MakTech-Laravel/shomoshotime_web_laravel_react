@@ -1,4 +1,4 @@
-﻿export const userEndpoints = {
+export const userEndpoints = {
   profile: "/user/profile",
   profileUpdate: "/user/profile/update",
   profileDelete: "/user/profile/delete",

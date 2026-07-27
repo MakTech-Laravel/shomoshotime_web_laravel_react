@@ -1,14 +1,16 @@
-/** Audio routes stay public; register new audio paths under these prefixes. */
-export const PUBLIC_AUDIO_PATH_PREFIXES = ["/audio/"] as const;
+/** Audio routes now require authentication; no audio path prefixes remain public. */
+export const PUBLIC_AUDIO_PATH_PREFIXES: readonly string[] = [];
 
 /**
  * Specialty resource segments protected at the router level (login required).
  * Study guide slugs are CMS-driven; flashcard/practice deck slugs are static.
+ * The static audio page (`/audio/:specialty`) is also login-gated.
  */
 export const PROTECTED_SPECIALTY_RESOURCE_SEGMENTS = [
   "study-guides",
   "flashcards",
   "practice-questions",
+  "audio",
 ] as const;
 
 export function isPublicAudioPath(pathname: string): boolean {

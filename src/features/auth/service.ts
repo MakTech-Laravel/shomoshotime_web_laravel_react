@@ -19,11 +19,16 @@ import { type AuthUser } from '@/auth/types'
 import { resolveAuthEndpoints } from '@/config/authEndpoints'
 import { USER_HOME_PATH } from '@/features/auth/paths'
 import {
+  WIX_USE_FORGOT_PASSWORD_ACTION,
+  WixUseForgotPasswordError,
+} from '@/features/auth/wixUseForgotPassword'
+import {
   type LoginPayload,
   type PasswordResetOtpPayload,
   type RegisterPayload,
   type VerifyOtpPayload,
 } from '@/features/auth/types'
+import axios from 'axios'
 
 const endpoints = resolveAuthEndpoints()
 
@@ -169,6 +174,22 @@ export async function loginUser(payload: LoginPayload, handlers: AuthHandlers) {
     }
     return { user, needsEmailVerification: !isEmailVerifiedFromLoginBody(res.data) }
   } catch (error) {
+    if (axios.isAxiosError(error)) {
+      const body = error.response?.data
+      const data = unwrapLaravelData<{ action?: string; email?: string }>(body)
+      if (data?.action === WIX_USE_FORGOT_PASSWORD_ACTION) {
+        const email =
+          typeof data.email === 'string' && data.email ? data.email : payload.email
+        const message =
+          typeof body === 'object' &&
+          body !== null &&
+          'message' in body &&
+          typeof (body as { message?: unknown }).message === 'string'
+            ? (body as { message: string }).message
+            : undefined
+        throw new WixUseForgotPasswordError(email, message)
+      }
+    }
     handlers.resetAuthState()
     throw error
   }

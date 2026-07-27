@@ -74,6 +74,7 @@ export function QuestionPdfPreview({ url, className }: QuestionPdfPreviewProps) 
         "mx-auto flex max-h-[320px] w-full max-w-[640px] items-center justify-center overflow-hidden",
         className,
       )}
+      onContextMenu={(e) => e.preventDefault()}
     >
       {status === "loading" ? (
         <div

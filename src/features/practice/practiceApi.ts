@@ -1,4 +1,4 @@
-﻿import { isAxiosError } from "axios";
+import { isAxiosError } from "axios";
 
 import { api } from "@/api/client";
 import { unwrapLaravelData, unwrapLaravelPaginatedData } from "@/api/laravelResponse";
@@ -64,9 +64,9 @@ export async function fetchQuestionsForSet(
       per_page: 200,
     });
     const { rows } = unwrapLaravelPaginatedData(res.data);
-    return sortPracticeQuestions(
-      rows.map(normalizeApiQuestion).filter((r): r is ApiPracticeQuestion => r !== null),
-    );
+    return rows
+      .map(normalizeApiQuestion)
+      .filter((r): r is ApiPracticeQuestion => r !== null);
   } catch (error) {
     if (emptyListOnNotFound(error)) return [];
     throw error;

@@ -54,6 +54,8 @@ export function AudioPlayer({ tracks, className }: AudioPlayerProps) {
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(1);
   const [showPlaylist, setShowPlaylist] = useState(true);
+  const [isBuffering, setIsBuffering] = useState(false);
+  const [playbackError, setPlaybackError] = useState<string | null>(null);
 
   const currentTrack = tracks[activeIndex] ?? tracks[0];
   const isMulti = tracks.length > 1;
@@ -66,12 +68,16 @@ export function AudioPlayer({ tracks, className }: AudioPlayerProps) {
     setIsPlaying(false);
     setCurrentTime(0);
     setDuration(0);
+    setIsBuffering(false);
+    setPlaybackError(null);
   }, [activeIndex]);
 
-  // Load duration for current track
+  // Sync duration when the current track source changes (browser loads via src + preload)
   useEffect(() => {
     const audio = audioRef.current;
-    if (!audio) return;
+    if (!audio || !currentTrack.src) return;
+
+    setPlaybackError(null);
 
     function sync() {
       if (audio && isFinite(audio.duration) && audio.duration > 0) {
@@ -79,16 +85,28 @@ export function AudioPlayer({ tracks, className }: AudioPlayerProps) {
       }
     }
 
+    function clearErrorOnReady() {
+      setPlaybackError(null);
+      setIsBuffering(false);
+    }
+
     audio.addEventListener("loadedmetadata", sync);
     audio.addEventListener("durationchange", sync);
+    audio.addEventListener("canplay", clearErrorOnReady);
     if (audio.readyState >= 1) sync();
-    else audio.load();
 
     return () => {
       audio.removeEventListener("loadedmetadata", sync);
       audio.removeEventListener("durationchange", sync);
+      audio.removeEventListener("canplay", clearErrorOnReady);
     };
   }, [currentTrack.src]);
+
+  function isBenignAudioError(audio: HTMLAudioElement): boolean {
+    const code = audio.error?.code;
+    // MEDIA_ERR_ABORTED — src change or interrupted metadata fetch; not a real failure
+    return code === MediaError.MEDIA_ERR_ABORTED;
+  }
 
   function togglePlay() {
     const audio = audioRef.current;
@@ -97,8 +115,17 @@ export function AudioPlayer({ tracks, className }: AudioPlayerProps) {
       audio.pause();
       setIsPlaying(false);
     } else {
-      audio.play().catch(() => setIsPlaying(false));
-      setIsPlaying(true);
+      setPlaybackError(null);
+      void audio
+        .play()
+        .then(() => {
+          setIsPlaying(true);
+          setPlaybackError(null);
+        })
+        .catch(() => {
+          setIsPlaying(false);
+          setPlaybackError("Unable to play this track. Try again.");
+        });
     }
   }
 
@@ -140,6 +167,16 @@ export function AudioPlayer({ tracks, className }: AudioPlayerProps) {
         preload="metadata"
         onTimeUpdate={() => setCurrentTime(audioRef.current?.currentTime ?? 0)}
         onEnded={handleEnded}
+        onWaiting={() => setIsBuffering(true)}
+        onCanPlay={() => setIsBuffering(false)}
+        onPlaying={() => setIsBuffering(false)}
+        onError={(e) => {
+          const audio = e.currentTarget;
+          if (isBenignAudioError(audio)) return;
+          setIsPlaying(false);
+          setIsBuffering(false);
+          setPlaybackError("Unable to play this track. Try again.");
+        }}
       />
 
       <div className="overflow-hidden rounded-sm border border-[#c8c8c8] bg-white">
@@ -210,6 +247,11 @@ export function AudioPlayer({ tracks, className }: AudioPlayerProps) {
               {currentTrack.album && (
                 <p className="mt-0.75 text-[13px] leading-tight text-gray-500 lg:mt-1 lg:text-[15px]">{currentTrack.album}</p>
               )}
+              {playbackError ? (
+                <p className="mt-2 text-[13px] text-[#c62828]">{playbackError}</p>
+              ) : isBuffering ? (
+                <p className="mt-2 text-[13px] text-[#666666]">Buffering…</p>
+              ) : null}
             </div>
 
             {/* Controls row */}

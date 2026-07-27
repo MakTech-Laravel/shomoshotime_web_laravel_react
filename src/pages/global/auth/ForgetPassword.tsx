@@ -2,13 +2,14 @@ import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ArrowRight } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { getAuthErrorMessage } from "@/features/auth/errorMessage";
 import { requestPasswordResetOtp } from "@/features/auth/service";
 
 export default function ForgetPassword() {
   const navigate = useNavigate();
-  const [email, setEmail] = React.useState("");
+  const [searchParams] = useSearchParams();
+  const [email, setEmail] = React.useState(() => searchParams.get("email")?.trim() ?? "");
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 

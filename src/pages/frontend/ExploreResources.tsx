@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { Check, X } from "lucide-react";
+import { OUTLINE_CARDS, SPECIALTY_OVERVIEW_PATH } from "@/data/specialtyOverviewContent";
 import { container } from "@/lib/container";
 import { cn } from "@/lib/utils";
 import { AudioPlayer } from "@/components/ui/AudioPlayer";
@@ -434,71 +435,6 @@ function AudioDemo() {
   );
 }
 
-type OutlineCardData = {
-  cardTitle: string;
-  subtitle: string;
-  rows: { label: string; value: string }[];
-};
-
-const OUTLINE_CARDS: OutlineCardData[] = [
-  {
-    cardTitle: "SPI Outlines",
-    subtitle: "SPI",
-    rows: [
-      { label: "Study Guides (Text-Based and Audio)", value: "5 Guides" },
-      { label: "Flashcards", value: "370 Cards" },
-      { label: "Practice Questions", value: "500 Questions" },
-      {
-        label: "Topics Covered...",
-        value:
-          "Fundamentals of Ultrasound - Transducers & Machine Functions - Image Optimization - Doppler Ultrasound - Artifacts - Basic Math.",
-      },
-    ],
-  },
-  {
-    cardTitle: "Abdomen Outlines",
-    subtitle: "Abdomen",
-    rows: [
-      { label: "Study Guides (Text-Based and Audio)", value: "12 Guides" },
-      { label: "Flashcards", value: "700 Cards" },
-      { label: "Practice Questions", value: "700 Questions" },
-      {
-        label: "Topics Covered...",
-        value:
-          "Liver, Biliary System, Pancreas - Urinary & Reproductive Systems - Thyroid, GI Tract, Spleen - Abdomen Wall, VUR, Procedures.",
-      },
-    ],
-  },
-  {
-    cardTitle: "OB/GYN Outlines",
-    subtitle: "OB/GYN",
-    rows: [
-      { label: "Study Guides (Text-Based and Audio)", value: "11 Guides" },
-      { label: "Flashcards", value: "600 Cards" },
-      { label: "Practice Questions", value: "500 Questions" },
-      {
-        label: "Topics Covered...",
-        value:
-          "Pelvic & Reproductive Anatomy - Gynecologic & Obstetric Pathology - Trimester-Specific Fetal Development - Placenta, Umbilical Cord, Patient Care.",
-      },
-    ],
-  },
-  {
-    cardTitle: "Vascular Outlines",
-    subtitle: "Vascular",
-    rows: [
-      { label: "Study Guides (Text-Based and Audio)", value: "8 Guides" },
-      { label: "Flashcards", value: "580 Cards" },
-      { label: "Practice Questions", value: "500 Questions" },
-      {
-        label: "Topics Covered...",
-        value:
-          "Vascular Anatomy & Pathology - Surgical Alterations - Physiologic Exams - Ultrasound-Guided Procedures - Safety & Quality Assurance.",
-      },
-    ],
-  },
-];
-
 function OutlinesSection() {
   return (
     <section className="border-t border-border-light bg-[#f3f4f6] py-14 lg:py-20">
@@ -516,8 +452,11 @@ function OutlinesSection() {
               <h3 className="mb-2 text-center font-heading text-[1.25rem] font-bold leading-snug text-black">
                 {card.cardTitle}
               </h3>
-              <article className="flex flex-1 flex-col rounded-md border border-[#e5e7eb] bg-white p-6 shadow-[0_1px_3px_rgba(0,0,0,0.06)] sm:p-8">
-                <h4 className="mb-4 text-left font-heading text-[1.5rem] font-bold leading-tight text-black">
+              <Link
+                to={SPECIALTY_OVERVIEW_PATH[card.slug]}
+                className="group flex flex-1 flex-col rounded-md border border-[#e5e7eb] bg-white p-6 shadow-[0_1px_3px_rgba(0,0,0,0.06)] transition hover:border-[#b8860b]/40 hover:shadow-md sm:p-8"
+              >
+                <h4 className="mb-4 text-left font-heading text-[1.5rem] font-bold leading-tight text-black group-hover:text-[#b8860b]">
                   {card.subtitle}
                 </h4>
 
@@ -550,7 +489,10 @@ function OutlinesSection() {
                     </tbody>
                   </table>
                 </div>
-              </article>
+                <span className="mt-4 text-sm font-semibold text-[#b8860b] group-hover:underline">
+                  View full overview →
+                </span>
+              </Link>
             </div>
           ))}
         </div>
